@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="my-4">Modifier mon profil</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            {{ form.as_p }}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Enregistrer les modifications
+        </button>
+        <a href="{% url 'profil' %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Annuler
+        </a>
+    </form>
+</div>
+{% endblock %}

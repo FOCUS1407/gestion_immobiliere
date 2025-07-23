@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Tableau de bord de l'Agence</h1>
+        <a href="{% url 'gestion:logout' %}" class="btn btn-danger">Déconnexion</a>
+    </div>
+
+    <p class="lead">Bienvenue, {{ user.username }} !</p>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Statistiques rapides (données en dur pour l'exemple) -->
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Biens Gérés</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ nombre_biens }}</h5>
+                    <p class="card-text">Total des propriétés sous gestion.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Propriétaires Gérés</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ nombre_proprietaires }}</h5>
+                    <p class="card-text">Total des propriétaires sous contrat.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-header">Taux d'occupation</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ occupancy_rate|floatformat:0 }}%</h5>
+                    <p class="card-text">Pourcentage des biens actuellement loués.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <!-- Liste des propriétaires gérés -->
+    <h3>Propriétaires sous contrat ({{ nombre_proprietaires }})</h3>
+    {% if proprietaires %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Nom</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Téléphone</th>
+                        <th scope="col">Biens</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proprietaires %}
+                    <tr>
+                        <td>{{ p.user.get_full_name|default:p.user.username }}</td>
+                        <td>{{ p.user.email }}</td>
+                        <td>{{ p.user.telephone }}</td>
+                        <td>{{ p.user.biens.count }}</td>
+                        <td>
+                            <a href="{% url 'gestion:proprietaire_detail' p.user.pk %}" class="btn btn-sm btn-outline-primary">Voir le profil</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Vous ne gérez aucun propriétaire pour le moment.</p>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <!-- Liste des biens gérés -->
+    <h3>Biens sous gestion ({{ nombre_biens }})</h3>
+    {% if biens %}
+        <div class="list-group">
+        {% for bien in biens %}
+            <a href="{% url 'gestion:bien_detail' bien.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ bien.nom }}</h5>
+                    <small>Propriétaire: {{ bien.proprietaire.username }}</small>
+                </div>
+                <p class="mb-1">{{ bien.adresse }}</p>
+            </a>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>Vous ne gérez aucun bien pour le moment.</p>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <!-- Actions rapides -->
+    <h3>Actions Rapides</h3>
+    <div class="list-group">
+        <a href="{% url 'gestion:ajouter_proprietaire' %}" class="list-group-item list-group-item-action active bg-success border-success">Ajouter un nouveau propriétaire</a>
+        <a href="{% url 'gestion:ajouter_bien' %}" class="list-group-item list-group-item-action">Ajouter une propriété à un propriétaire existant</a>
+        <a href="#" class="list-group-item list-group-item-action">Gérer les locataires</a>
+        <a href="{% url 'gestion:profil' %}" class="list-group-item list-group-item-action">Modifier mon profil</a>
+    </div>
+</div>
+{% endblock %}

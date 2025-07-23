@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Mon Profil</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <h4>Informations personnelles</h4>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ user_form.first_name.label_tag }}
+                                {{ user_form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ user_form.last_name.label_tag }}
+                                {{ user_form.last_name }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">{{ user_form.email.label_tag }} {{ user_form.email }}</div>
+                            <div class="col-md-6 mb-3">{{ user_form.telephone.label_tag }} {{ user_form.telephone }}</div>
+                        </div>
+                        <div class="mb-3">{{ user_form.addresse.label_tag }} {{ user_form.addresse }}</div>
+
+                        {% if user.user_type == 'AG' and agence_form %}
+                            <h4 class="mt-4">Informations de l'agence</h4>
+                            <hr>
+                            <div class="mb-3">
+                                {{ agence_form.siret.label_tag }}
+                                {{ agence_form.siret }}
+                                {% for error in agence_form.siret.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'gestion:changer_mdp' %}" class="btn btn-outline-secondary">Changer le mot de passe</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

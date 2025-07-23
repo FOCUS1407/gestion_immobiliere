@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Détails : {{ proprietaire_user.get_full_name|default:proprietaire_user.username }}</h3>
+        <div>
+            <a href="{% url 'gestion:modifier_proprietaire' proprietaire_user.pk %}" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary ms-2">Retour</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Informations Personnelles
+                </div>
+                <div class="card-body">
+                    <p><strong>Nom complet :</strong> {{ proprietaire_user.get_full_name|default:"Non renseigné" }}</p>
+                    <p><strong>Email :</strong> {{ proprietaire_user.email }}</p>
+                    <p><strong>Téléphone :</strong> {{ proprietaire_user.telephone }}</p>
+                    <p><strong>Adresse :</strong> {{ proprietaire_user.addresse|linebreaksbr|default:"Non renseignée" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Détails du Contrat
+                </div>
+                <div class="card-body">
+                    <p><strong>Taux de commission :</strong> {{ proprietaire_profil.taux_commission }} %</p>
+                    <p><strong>Début du contrat :</strong> {{ proprietaire_profil.date_debut_contrat|date:"d/m/Y" }}</p>
+                    <p><strong>Durée du contrat :</strong> {{ proprietaire_profil.duree_contrat }} mois</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h4>Biens de ce propriétaire ({{ biens.count }})</h4>
+    {% if biens %}
+        <div class="list-group">
+        {% for bien in biens %}
+            <a href="{% url 'gestion:bien_detail' bien.pk %}" class="list-group-item list-group-item-action">
+                <h5 class="mb-1">{{ bien.nom }}</h5>
+                <p class="mb-1">{{ bien.adresse }}</p>
+            </a>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p>Ce propriétaire n'a aucun bien enregistré.</p>
+    {% endif %}
+
+</div>
+{% endblock %}

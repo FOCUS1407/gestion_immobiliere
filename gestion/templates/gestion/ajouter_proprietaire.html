@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Ajouter un nouveau propriétaire</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <p class="text-muted">Remplissez les informations ci-dessous pour créer le compte du propriétaire, son premier bien et les termes du contrat de gestion.</p>
+                        <hr>
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}<p class="mb-0">{{ error }}</p>{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <h5>Informations sur le propriétaire</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">{{ form.first_name.label_tag }} {{ form.first_name }} {% for error in form.first_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6 mb-3">{{ form.last_name.label_tag }} {{ form.last_name }} {% for error in form.last_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">{{ form.email.label_tag }} {{ form.email }} {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-6 mb-3">{{ form.telephone.label_tag }} {{ form.telephone }} {% for error in form.telephone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        </div>
+                        <div class="mb-3">{{ form.addresse.label_tag }} {{ form.addresse }} {% for error in form.addresse.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        
+                        <hr>
+
+                        <h5>Informations sur le premier bien</h5>
+                        <div class="mb-3">{{ form.bien_nom.label_tag }} {{ form.bien_nom }} {% for error in form.bien_nom.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        <div class="mb-3">{{ form.bien_adresse.label_tag }} {{ form.bien_adresse }} {% for error in form.bien_adresse.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        <div class="mb-3">{{ form.bien_description.label_tag }} {{ form.bien_description }} {% for error in form.bien_description.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+
+                        <hr>
+
+                        <h5>Termes du contrat</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">{{ form.taux_commission.label_tag }} {{ form.taux_commission }} {% for error in form.taux_commission.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-4 mb-3">{{ form.date_debut_contrat.label_tag }} {{ form.date_debut_contrat }} {% for error in form.date_debut_contrat.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                            <div class="col-md-4 mb-3">{{ form.duree_contrat.label_tag }} {{ form.duree_contrat }} {% for error in form.duree_contrat.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
+                        </div>
+
+                        <hr>
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer le propriétaire</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

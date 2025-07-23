@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3>Confirmer la suppression</h3>
+                </div>
+                <div class="card-body">
+                    <p>Êtes-vous sûr de vouloir supprimer définitivement le bien suivant ?</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Nom :</strong> {{ bien.nom }}<br>
+                        <strong>Adresse :</strong> {{ bien.adresse }}
+                    </div>
+
+                    <p class="text-danger"><strong>Attention :</strong> Cette action est irréversible.</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Oui, supprimer</button>
+                        <a href="{% url 'gestion:bien_detail' bien.pk %}" class="btn btn-secondary">Annuler</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

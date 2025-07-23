@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="mb-4">Plateforme de Gestion Immobilière</h1>
+            <p class="lead">Bienvenue sur Rent Solution. La solution tout-en-un pour les agences et les propriétaires.</p>
+        </div>
+        <div class="col-md-8 text-center mt-4">
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'gestion:connexion' %}" class="btn btn-primary btn-lg px-4 gap-3">Se connecter</a>
+                <a href="{% url 'gestion:register' %}" class="btn btn-success btn-lg px-4">Créer un compte</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
