@@ -5,6 +5,7 @@ from .models import (
     CustomUser, Agence, Proprietaire, TypeBien, Immeuble, 
     Locataire, MoyenPaiement, Chambre, Location, Paiement
 )
+from django.db.models import Count
 
 # Forms for CustomUserAdmin to handle custom fields
 class CustomUserCreationForm(UserCreationForm):
@@ -45,10 +46,24 @@ class AgenceAdmin(admin.ModelAdmin):
 # Configuration pour les propriétaires
 @admin.register(Proprietaire)
 class ProprietaireAdmin(admin.ModelAdmin):
-    list_display = ('user', 'agence', 'nombre_bien', 'taux_commission', 'date_debut_contrat', 'duree_contrat')
+    list_display = ('user', 'agence', 'get_nombre_immeubles', 'taux_commission', 'date_debut_contrat', 'duree_contrat')
     list_filter = ('agence',)
     search_fields = ('user__username', 'user__email')
     raw_id_fields = ('user', 'agence')
+
+    def get_queryset(self, request):
+        """Optimize the queryset by annotating the count of properties."""
+        queryset = super().get_queryset(request)
+        queryset = queryset.annotate(
+            _nombre_immeubles=Count('immeubles')
+        )
+        return queryset
+
+    def get_nombre_immeubles(self, obj):
+        """Return the annotated count."""
+        return obj._nombre_immeubles
+    get_nombre_immeubles.admin_order_field = '_nombre_immeubles'  # Allows column sorting
+    get_nombre_immeubles.short_description = 'Nombre d\'immeubles'  # Sets column header
 
 # Configuration pour les types de bien
 @admin.register(TypeBien)

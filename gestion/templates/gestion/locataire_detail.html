@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Détails du Locataire{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ locataire.prenom }} {{ locataire.nom }}</h1>
+        <div>
+            <a href="{% url 'gestion:modifier_locataire' locataire.pk %}" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'gestion:gerer_locataires' %}" class="btn btn-secondary">Retour à la liste</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Informations Personnelles
+        </div>
+        <div class="card-body">
+            <p><strong>Nom complet :</strong> {{ locataire.prenom }} {{ locataire.nom }}</p>
+            <p><strong>Téléphone :</strong> {{ locataire.telephone }}</p>
+            <p><strong>Email :</strong> {{ locataire.email|default:"Non renseigné" }}</p>
+            <p><strong>Raison Sociale :</strong> {{ locataire.raison_sociale|default:"N/A" }}</p>
+            <p><strong>Caution versée :</strong> {{ locataire.caution|floatformat:0 }} Frcfa</p>
+            <p><strong>Inscrit le :</strong> {{ locataire.date_inscription|date:"d F Y" }}</p>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h3>Historique des locations</h3>
+    {% if locations %}
+        <div class="list-group">
+            {% for location in locations %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">
+                            <a href="{% url 'gestion:chambre_detail' location.chambre.pk %}">Unité : {{ location.chambre.designation }}</a>
+                        </h5>
+                        {% if not location.date_sortie %}
+                            <span class="badge bg-success">Location Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Location Terminée</span>
+                        {% endif %}
+                    </div>
+                    <p class="mb-1">Immeuble : {{ location.chambre.immeuble.addresse|truncatechars:50 }}</p>
+                    <small>Du {{ location.date_entree|date:"d/m/Y" }} {% if location.date_sortie %}au {{ location.date_sortie|date:"d/m/Y" }}{% endif %}</small>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            Ce locataire n'a aucun historique de location.
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}        

@@ -15,23 +15,16 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import include, path
-from django.views.generic import RedirectView
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    # Admin
-    path('admin/', admin.site.urls),     
-    path('', include('gestion.urls')),
-    # urls.py principal
-    path('gestion/', include('gestion.urls')),
+    path('admin/', admin.site.urls),
+    # Inclut toutes les URLs définies dans l'application 'gestion'
+    path('', include('gestion.urls')), 
+]
 
-    path('', RedirectView.as_view(pattern_name='gestion:tableau_de_bord')),
-
-    
-    # Authentification
-    path('auth/', include('django.contrib.auth.urls')),
-
-    
-    
-    
-] 
+# Uniquement pour le développement, pour servir les fichiers médias
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

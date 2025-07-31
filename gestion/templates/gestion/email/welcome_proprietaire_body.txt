@@ -1,0 +1,14 @@
+Bonjour {{ user.get_full_name }},
+
+Bienvenue sur RentSolution ! Votre compte propriétaire a été créé avec succès par votre agence.
+
+Voici vos identifiants de connexion :
+Nom d'utilisateur : {{ user.username }}
+Mot de passe temporaire : {{ password }}
+
+Pour des raisons de sécurité, nous vous demandons de changer ce mot de passe dès votre première connexion.
+
+Pour vous connecter, veuillez suivre ce lien : {{ login_url }}
+
+Cordialement,
+L'équipe RentSolution

@@ -1,0 +1,53 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+/* --- Styles personnalisés pour la barre de navigation --- */
+.navbar-custom {
+    background-color: #0d6efd;
+    /* Bleu primaire de Bootstrap */
+}
+
+.navbar-custom .navbar-brand,
+.navbar-custom .nav-link {
+    color: #ffffff;
+    /* Texte blanc pour un meilleur contraste */
+}
+
+.navbar-custom .nav-link:hover {
+    color: #e9ecef;
+    /* Couleur du texte au survol (gris clair) */
+}
+
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.5);
+    /* Bordure plus visible pour l'icône mobile */
+}
+
+/* --- Styles pour le pied de page --- */
+.footer-custom {
+    background-color: #f8f9fa;
+    /* Couleur de fond claire */
+    color: #6c757d;
+    /* Couleur de texte secondaire */
+}
+
+.footer-custom a.text-reset {
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.footer-custom a.text-reset:hover {
+    color: #0d6efd !important;
+    /* Couleur primaire au survol */
+}
+
+.footer-custom .fw-bold {
+    color: #343a40;
+}

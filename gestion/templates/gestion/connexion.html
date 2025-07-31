@@ -1,44 +1,34 @@
-{% extends 'base.html' %}
+{% extends 'gestion/base.html' %}
 
 {% block content %}
-<div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h3>Connexion</h3>
+                    <h3 class="text-center">Connexion</h3>
                 </div>
                 <div class="card-body">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-danger">{{ message }}</div>
+                            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                         {% endfor %}
                     {% endif %}
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    <form method="post" action="{% url 'gestion:connexion' %}">
+
+                    <form method="post">
                         {% csrf_token %}
-                        <div class="form-group">
-                            <label for="{{ form.username.id_for_label }}">Nom d'utilisateur</label>
-                            {{ form.username }}
-                        </div>
-                        <div class="form-group">
-                            <label for="{{ form.password.id_for_label }}">Mot de passe</label>
-                            {{ form.password }}
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
-                        <div class="text-center mt-3">
-                            <a href="{% url 'gestion:register' %}">Pas de compte? Créer un Compte</a>
-                        </div>
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary w-100">Se connecter</button>
                     </form>
+                    <hr>
+                    <div class="text-center">
+                        <a href="{% url 'gestion:reinitialisation' %}">Mot de passe oublié ?</a>
+                    </div>
+                    <div class="text-center mt-2">
+                        <p>Pas encore de compte ? 
+                            <a href="{% url 'gestion:register' %}">Créez-en un !</a></p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}

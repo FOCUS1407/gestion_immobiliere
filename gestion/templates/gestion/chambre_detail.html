@@ -1,0 +1,146 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}Détails de l'unité : {{ chambre.designation }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Unité : {{ chambre.designation }}</h1>
+            <p class="text-muted">
+                Immeuble : <a href="{% url 'gestion:immeuble_detail' chambre.immeuble.pk %}">{{ chambre.immeuble.addresse }}</a>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'gestion:immeuble_detail' chambre.immeuble.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Retour à l'immeuble
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Informations sur le locataire -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Situation locative</h5>
+                </div>
+                <div class="card-body">
+                    {% if chambre.locataire %}
+                        <p><strong>Statut :</strong> <span class="badge bg-danger">Occupée</span></p>
+                        <p><strong>Locataire :</strong> {{ chambre.locataire.prenom }} {{ chambre.locataire.nom }}</p>
+                        {% if location_active %}
+                            <p><strong>Date d'entrée :</strong> {{ location_active.date_entree|date:"d F Y" }}</p>
+                        {% endif %}
+                        {% if request.user.user_type == 'AG' %}
+                            <form action="{% url 'gestion:liberer_chambre' chambre.pk %}" method="post" class="mt-3">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning">Libérer l'unité</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <p><strong>Statut :</strong> <span class="badge bg-success">Libre</span></p>
+                        {% if form %}
+                            <hr>
+                            <h6 class="mb-3">Assigner un nouveau locataire</h6>
+                            <form method="post">
+                                {% csrf_token %}
+                                {{ form.as_p }}
+                                <button type="submit" class="btn btn-primary">Assigner le locataire</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Historique des paiements -->
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Historique des Paiements</h5>
+                    {% if request.user.user_type == 'AG' and chambre.locataire %}
+                        <a href="{% url 'gestion:ajouter_paiement' chambre.pk %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Enregistrer un paiement
+                        </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if payment_history %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Mois Couvert</th>
+                                        <th>Statut</th>
+                                        <th>Date de Paiement</th>
+                                        <th>Montant Payé</th>
+                                        {% if request.user.user_type == 'AG' %}
+                                            <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in payment_history %}
+                                    <tr class="{% if item.status == 'unpaid' %}table-danger{% endif %}">
+                                        <td><strong>{{ item.month }}</strong></td>
+                                        <td>
+                                            {% if item.status == 'paid' %}
+                                                <span class="badge bg-success">Payé</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Arriéré</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.payment.date_paiement|date:"d/m/Y"|default:"--" }}</td>
+                                        <td>
+                                            {% if item.payment %}
+                                                {{ item.payment.montant|floatformat:0 }} Frcfa
+                                            {% else %}
+                                                --
+                                            {% endif %}
+                                        </td>
+                                        {% if request.user.user_type == 'AG' %}
+                                            <td>
+                                                {% if item.payment %}
+                                                    <a href="{% url 'gestion:modifier_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="fas fa-edit"></i></a>
+                                                    <a href="{% url 'gestion:supprimer_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fas fa-trash"></i></a>
+                                                    <a href="{% url 'gestion:generer_quittance_pdf' item.payment.pk %}" class="btn btn-sm btn-outline-info" title="Générer la quittance"><i class="fas fa-file-pdf"></i></a>
+                                                {% else %}
+                                                    <a href="{% url 'gestion:ajouter_paiement' chambre.pk %}?mois={{ item.month|urlencode }}" class="btn btn-sm btn-success" title="Enregistrer le paiement pour ce mois">Payer</a>
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted p-3">Aucun historique de paiement disponible pour cette location.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <!-- Informations sur l'unité -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations sur l'unité</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Loyer mensuel :</strong> {{ chambre.prix_loyer|floatformat:0 }} Frcfa</p>
+                    <p><strong>Superficie :</strong> {{ chambre.superficie }} m²</p>
+                    <p><strong>Mise en location le :</strong> {{ chambre.date_mise_en_location|date:"d F Y" }}</p>
+
+                    {% if request.user.user_type == 'AG' %}
+                    <hr>
+                    <div class="mt-2">
+                        <a href="{% url 'gestion:modifier_chambre' chambre.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-edit me-2"></i>Modifier</a>
+                        <a href="{% url 'gestion:supprimer_chambre' chambre.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-2"></i>Supprimer</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'widget_tweaks',
     'gestion.apps.GestionConfig',
-    'gestion_immobiliere',  # Assurez-vous que votre application est incluse ici
     
 ]
 
@@ -51,6 +54,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'gestion.middleware.ForcePasswordChangeMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 ]
@@ -66,6 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                    'gestion.context_processors.notifications_processor',
             ],
         },
     },
@@ -94,12 +99,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 10,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        'NAME': 'gestion.validators.CustomPasswordValidator',
     },
 ]
 
@@ -135,17 +146,28 @@ ROOT_URLCONF = 'gestion_immobiliere.urls'  # Chemin vers le fichier urls.py prin
 AUTH_USER_MODEL = 'gestion.CustomUser'  # Utilise votre modèle User personnalisé
 
 # URLs
-LOGIN_URL = 'login'  # Nom de votre URL de connexion
-LOGIN_URL = 'gestion:login'  
-LOGOUT_REDIRECT_URL = 'login' 
-LOGIN_URL = 'connexion'
-LOGIN_REDIRECT_URL = 'tableau_de_bord'  # Nom de votre URL de tableau de bord
-LOGOUT_REDIRECT_URL = 'accueil'  # Nom de votre URL d'accueil
+LOGIN_URL = 'gestion:connexion'
+LOGIN_REDIRECT_URL = 'gestion:accueil'  # Redirige vers l'accueil, qui redirigera vers le bon tableau de bord
+LOGOUT_REDIRECT_URL = 'gestion:accueil'
 
 # Sessions
 SESSION_COOKIE_AGE = 1209600  # 2 semaines en secondes
 SESSION_SAVE_EVERY_REQUEST = True
 
-# Sécurité (en production)
-CSRF_COOKIE_SECURE = True  # À activer en HTTPS
-SESSION_COOKIE_SECURE = True
+# Sécurité (à activer en production avec HTTPS)
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+
+# Configuration des emails (pour le développement, les emails sont affichés dans la console)
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # À commenter pour la production
+
+# --- Configuration pour la production avec Gmail ---
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER') # Votre adresse Gmail
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD') # Votre mot de passe d'application
+
+# L'email qui apparaîtra comme expéditeur
+DEFAULT_FROM_EMAIL = f"RentSolution <{os.getenv('EMAIL_HOST_USER')}>"

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Gérer les Locataires{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gérer les Locataires</h1>
+        <div>
+            <a href="{% url 'gestion:ajouter_locataire' %}" class="btn btn-primary">Ajouter un locataire</a>
+            <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary">Retour</a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if locataires %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom Complet</th>
+                        <th>Téléphone</th>
+                        <th>Email</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for locataire in locataires %}
+                    <tr>
+                        <td>{{ locataire.prenom }} {{ locataire.nom }}</td>
+                        <td>{{ locataire.telephone }}</td>
+                        <td>{{ locataire.email|default:"N/A" }}</td>
+                        <td>
+                            {% if locataire.chambres.exists %}
+                                <span class="badge bg-danger">Occupant</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Disponible</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'gestion:locataire_detail' locataire.pk %}" class="btn btn-sm btn-info">Détails</a>
+                            <a href="{% url 'gestion:modifier_locataire' locataire.pk %}" class="btn btn-sm btn-secondary">Modifier</a>
+                            <a href="{% url 'gestion:supprimer_locataire' locataire.pk %}" class="btn btn-sm btn-danger">Supprimer</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            Aucun locataire n'a été ajouté pour le moment.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

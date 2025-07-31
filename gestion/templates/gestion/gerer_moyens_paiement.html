@@ -1,0 +1,56 @@
+{% extends 'gestion/base.html' %}
+
+{% block title %}Gérer les Moyens de Paiement{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gérer les Moyens de Paiement</h1>
+        <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary">Retour au tableau de bord</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-7">
+            <h3>Moyens de paiement existants</h3>
+            {% if moyens_paiement %}
+                <ul class="list-group">
+                    {% for moyen in moyens_paiement %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ moyen.get_designation_display }}
+                        <form action="{% url 'gestion:supprimer_moyen_paiement' moyen.pk %}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce moyen de paiement ?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>Aucun moyen de paiement n'a été ajouté.</p>
+            {% endif %}
+        </div>
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header">
+                    Ajouter un nouveau moyen de paiement
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

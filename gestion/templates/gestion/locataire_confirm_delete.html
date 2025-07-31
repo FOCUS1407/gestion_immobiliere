@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmer la suppression{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3>Confirmer la suppression</h3>
+                </div>
+                <div class="card-body">
+                    <p>Êtes-vous sûr de vouloir supprimer définitivement le locataire :</p>
+                    <h4 class="text-center my-3">"{{ locataire.prenom }} {{ locataire.nom }}"</h4>
+                    
+                    {% if is_occupant %}
+                    <div class="alert alert-warning" role="alert">
+                        <strong>Attention !</strong> Ce locataire occupe actuellement une unité. Sa suppression rendra cette unité libre. Si vous souhaitez simplement mettre fin à la location, il est préférable d'utiliser la fonction "Libérer l'unité" sur la page de l'unité concernée.
+                    </div>
+                    {% endif %}
+
+                    <p>Cette action est irréversible et supprimera toutes les données associées à ce locataire (contrats, paiements, etc.).</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger w-100">Oui, supprimer ce locataire</button>
+                        <a href="{% url 'gestion:gerer_locataires' %}" class="btn btn-secondary w-100 mt-2">Non, annuler</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

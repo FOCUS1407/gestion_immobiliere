@@ -1,0 +1,9 @@
+# Fichiers de dépendances Python
+venv/
+__pycache__/
+
+# Fichiers de base de données
+*.sqlite3
+
+# Fichiers d'environnement
+.env

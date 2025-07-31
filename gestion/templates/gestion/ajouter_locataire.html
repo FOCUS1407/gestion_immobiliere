@@ -6,16 +6,16 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h3>Modifier le bien : {{ bien.nom }}</h3>
+                    <h3>Ajouter un nouveau locataire</h3>
                 </div>
                 <div class="card-body">
                     <form method="post" novalidate>
                         {% csrf_token %}
-                        
                         {{ form.as_p }}
-
-                        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-                        <a href="{% url 'gestion:bien_detail' bien.pk %}" class="btn btn-secondary">Annuler</a>
+                        <div class="d-flex justify-content-end mt-3">
+                            <a href="{% url 'gestion:gerer_locataires' %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer le locataire</button>
+                        </div>
                     </form>
                 </div>
             </div>

@@ -1,0 +1,53 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}Modifier l'unité : {{ chambre.designation }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Modifier l'unité locative</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Modification de l'unité <strong>{{ chambre.designation }}</strong> de l'immeuble : {{ chambre.immeuble.addresse }}
+                    </p>
+                    <hr>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.designation.id_for_label }}" class="form-label">{{ form.designation.label }}</label>
+                            {{ form.designation }}
+                            {% if form.designation.errors %}<div class="invalid-feedback d-block">{{ form.designation.errors }}</div>{% endif %}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.superficie.id_for_label }}" class="form-label">{{ form.superficie.label }} (m²)</label>
+                                {{ form.superficie }}
+                                {% if form.superficie.errors %}<div class="invalid-feedback d-block">{{ form.superficie.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.prix_loyer.id_for_label }}" class="form-label">{{ form.prix_loyer.label }} (Frcfa)</label>
+                                {{ form.prix_loyer }}
+                                {% if form.prix_loyer.errors %}<div class="invalid-feedback d-block">{{ form.prix_loyer.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

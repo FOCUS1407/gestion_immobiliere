@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3>Confirmer la suppression du propriétaire</h3>
+                </div>
+                <div class="card-body">
+                    <p>Êtes-vous sûr de vouloir supprimer définitivement le propriétaire suivant ?</p>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Nom :</strong> {{ proprietaire_user.get_full_name }}<br>
+                        <strong>Email :</strong> {{ proprietaire_user.email }}
+                    </div>
+
+                    <p class="text-danger"><strong>Attention :</strong> Cette action est irréversible et supprimera également <strong>tous les biens, contrats et données associés</strong> à ce propriétaire.</p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Oui, supprimer définitivement</button>
+                        <a href="{% url 'gestion:proprietaire_detail' proprietaire_user.pk %}" class="btn btn-secondary">Annuler</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

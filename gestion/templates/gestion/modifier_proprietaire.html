@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Modifier le profil de : {{ proprietaire_user.get_full_name }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <h4>Informations personnelles</h4>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">{{ user_form.first_name.label_tag }} {{ user_form.first_name }}</div>
+                            <div class="col-md-6 mb-3">{{ user_form.last_name.label_tag }} {{ user_form.last_name }}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">{{ user_form.email.label_tag }} {{ user_form.email }}</div>
+                            <div class="col-md-6 mb-3">{{ user_form.telephone.label_tag }} {{ user_form.telephone }}</div>
+                        </div>
+                        <div class="mb-3">{{ user_form.addresse.label_tag }} {{ user_form.addresse }}</div>
+
+                        <h4 class="mt-4">Informations du contrat</h4>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">{{ profile_form.taux_commission.label_tag }} {{ profile_form.taux_commission }}</div>
+                            <div class="col-md-4 mb-3">{{ profile_form.date_debut_contrat.label_tag }} {{ profile_form.date_debut_contrat }}</div>
+                            <div class="col-md-4 mb-3">{{ profile_form.duree_contrat.label_tag }} {{ profile_form.duree_contrat }}</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'gestion:proprietaire_detail' proprietaire_user.pk %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

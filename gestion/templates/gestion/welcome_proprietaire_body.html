@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bienvenue sur RentSolution</title>
+</head>
+<body>
+    <p>Bonjour {{ user.get_full_name }},</p>
+    <p>Bienvenue sur <strong>RentSolution</strong> ! Votre compte propriétaire a été créé avec succès par votre agence.</p>
+    <p>Voici vos identifiants de connexion :</p>
+    <ul>
+        <li><strong>Nom d'utilisateur :</strong> {{ user.username }}</li>
+        <li><strong>Mot de passe temporaire :</strong> <code>{{ password }}</code></li>
+    </ul>
+    <p style="color: red; font-weight: bold;">Pour des raisons de sécurité, nous vous demandons de changer ce mot de passe dès votre première connexion.</p>
+    <p>Pour vous connecter, veuillez cliquer sur le bouton ci-dessous :</p>
+    <a href="{{ login_url }}" style="background-color: #0d6efd; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Se connecter</a>
+    <p>Cordialement,<br>L'équipe RentSolution</p>
+</body>
+</html>

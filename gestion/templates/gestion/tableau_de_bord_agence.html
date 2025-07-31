@@ -1,11 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'gestion/base.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Tableau de bord de l'Agence</h1>
-        <a href="{% url 'gestion:logout' %}" class="btn btn-danger">Déconnexion</a>
-    </div>
+<h1 class="mb-4">Tableau de bord de l'Agence</h1>
 
     <p class="lead">Bienvenue, {{ user.username }} !</p>
 
@@ -21,10 +17,10 @@
     <div class="row">
         <!-- Statistiques rapides (données en dur pour l'exemple) -->
         <div class="col-md-4">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-header">Biens Gérés</div>
+            <div class="card text-white bg-dark mb-3">
+                <div class="card-header">Immeubles Gérés</div>
                 <div class="card-body">
-                    <h5 class="card-title">{{ nombre_biens }}</h5>
+                    <h5 class="card-title">{{ nombre_immeubles }}</h5>
                     <p class="card-text">Total des propriétés sous gestion.</p>
                 </div>
             </div>
@@ -53,7 +49,7 @@
 
     <!-- Liste des propriétaires gérés -->
     <h3>Propriétaires sous contrat ({{ nombre_proprietaires }})</h3>
-    {% if proprietaires %}
+    {% if proprietaires_page.object_list %}
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead>
@@ -61,17 +57,17 @@
                         <th scope="col">Nom</th>
                         <th scope="col">Email</th>
                         <th scope="col">Téléphone</th>
-                        <th scope="col">Biens</th>
+                        <th scope="col">Immeubles</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for p in proprietaires %}
+                    {% for p in proprietaires_page %}
                     <tr>
                         <td>{{ p.user.get_full_name|default:p.user.username }}</td>
                         <td>{{ p.user.email }}</td>
                         <td>{{ p.user.telephone }}</td>
-                        <td>{{ p.user.biens.count }}</td>
+                        <td>{{ p.nombre_immeubles_proprietaire }}</td>
                         <td>
                             <a href="{% url 'gestion:proprietaire_detail' p.user.pk %}" class="btn btn-sm btn-outline-primary">Voir le profil</a>
                         </td>
@@ -80,6 +76,32 @@
                 </tbody>
             </table>
         </div>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if proprietaires_page.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ proprietaires_page.previous_page_number }}">Précédent</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+
+                {% for i in proprietaires_page.paginator.page_range %}
+                    {% if proprietaires_page.number == i %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if proprietaires_page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.next_page_number }}">Suivant</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
     {% else %}
         <p>Vous ne gérez aucun propriétaire pour le moment.</p>
     {% endif %}
@@ -87,21 +109,88 @@
     <hr class="my-4">
 
     <!-- Liste des biens gérés -->
-    <h3>Biens sous gestion ({{ nombre_biens }})</h3>
-    {% if biens %}
+    <h3>Immeubles sous gestion ({{ nombre_immeubles }})</h3>
+    {% if immeubles %}
         <div class="list-group">
-        {% for bien in biens %}
-            <a href="{% url 'gestion:bien_detail' bien.pk %}" class="list-group-item list-group-item-action">
+        {% for immeuble in immeubles %}
+            <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ bien.nom }}</h5>
-                    <small>Propriétaire: {{ bien.proprietaire.username }}</small>
+                    <h5 class="mb-1">{{ immeuble.addresse|truncatewords:10 }}</h5>
+                    <small>Propriétaire : {{ immeuble.proprietaire.user.get_full_name|default:immeuble.proprietaire.user.username }}</small>
                 </div>
-                <p class="mb-1">{{ bien.adresse }}</p>
+                <p class="mb-1">Type: {{ immeuble.type_bien }}</p>
             </a>
         {% endfor %}
         </div>
     {% else %}
-        <p>Vous ne gérez aucun bien pour le moment.</p>
+        <p>Vous ne gérez aucun immeuble pour le moment.</p>
+    {% endif %}
+
+    <hr class="my-4">
+
+    <!-- Unités locatives gérées -->
+    <h3>Unités locatives ({{ total_units }})</h3>
+    {% if chambres_page.object_list %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Désignation</th>
+                        <th>Immeuble</th>
+                        <th>Loyer</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for chambre in chambres_page %}
+                    <tr>
+                        <td>{{ chambre.designation }}</td>
+                        <td>{{ chambre.immeuble.addresse|truncatechars:30 }}</td>
+                        <td>{{ chambre.prix_loyer }} Frcfa</td>
+                        <td>
+                            {% if chambre.locataire %}
+                                <span class="badge bg-danger">Occupée</span> par {{ chambre.locataire.prenom }} {{ chambre.locataire.nom }}
+                            {% else %}
+                                <span class="badge bg-success">Libre</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-sm btn-outline-primary">Gérer</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Pagination pour les chambres -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if chambres_page.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ chambres_page.previous_page_number }}">Précédent</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+
+                {% for i in chambres_page.paginator.page_range %}
+                    {% if chambres_page.number == i %}
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ i }}">{{ i }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if chambres_page.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ chambres_page.next_page_number }}">Suivant</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% else %}
+        <p>Aucune unité locative trouvée.</p>
     {% endif %}
 
     <hr class="my-4">
@@ -110,9 +199,7 @@
     <h3>Actions Rapides</h3>
     <div class="list-group">
         <a href="{% url 'gestion:ajouter_proprietaire' %}" class="list-group-item list-group-item-action active bg-success border-success">Ajouter un nouveau propriétaire</a>
-        <a href="{% url 'gestion:ajouter_bien' %}" class="list-group-item list-group-item-action">Ajouter une propriété à un propriétaire existant</a>
-        <a href="#" class="list-group-item list-group-item-action">Gérer les locataires</a>
+        <a href="{% url 'gestion:gerer_locataires' %}" class="list-group-item list-group-item-action">Gérer les locataires</a>
         <a href="{% url 'gestion:profil' %}" class="list-group-item list-group-item-action">Modifier mon profil</a>
     </div>
-</div>
 {% endblock %}

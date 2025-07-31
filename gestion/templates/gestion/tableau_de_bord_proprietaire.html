@@ -1,75 +1,44 @@
-{% extends 'base.html' %}
+{% extends "gestion/base.html" %}
+
+{% block title %}Mon Tableau de Bord{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Tableau de bord du Propriétaire</h1>
-        <a href="{% url 'gestion:logout' %}" class="btn btn-danger">Déconnexion</a>
-    </div>
+<div class="container mt-4">
+    <h1 class="mb-4">Tableau de Bord Propriétaire</h1>
+    <p class="lead">Bienvenue, {{ user.get_full_name|default:user.username }} !</p>
 
-    <p class="lead">Bienvenue, {{ user.username }} !</p>
-
-    <hr class="my-4">
-
-    <!-- Mes Biens -->
-    <h3>Mes Propriétés ({{ biens.count }})</h3>
-
-    {% if biens %}
-        {% for bien in biens %}
-        <div class="card mt-3">
-            <div class="card-header">
-                {{ bien.nom }}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <p class="card-text"><strong>Adresse :</strong> {{ bien.adresse }}</p>
-                <p class="card-text"><strong>Statut :</strong> Loué</p> {# Donnée à dynamiser plus tard #}
-                <a href="{% url 'gestion:bien_detail' bien.pk %}" class="btn btn-secondary">Voir les détails</a>
-            </div>
-        </div>
         {% endfor %}
-    {% else %}
-        <p>Vous n'avez pas encore ajouté de propriété.</p>
-        <a href="{% url 'gestion:ajouter_bien' %}" class="btn btn-primary">Ajouter ma première propriété</a>
     {% endif %}
 
-    <hr class="my-4">
-
-    <!-- Actions rapides -->
-    <h3>Actions Rapides</h3>
-    <div class="list-group">
-        <a href="#" class="list-group-item list-group-item-action">Consulter mes revenus</a>
-        <a href="{% url 'gestion:profil' %}" class="list-group-item list-group-item-action">Modifier mon profil</a>
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Mes Immeubles ({{ nombre_immeubles }})</h5>
+        </div>
+        <div class="card-body">
+            {% if immeubles %}
+                <div class="list-group">
+                    {% for immeuble in immeubles %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-1">{{ immeuble.addresse }}</h5>
+                                    <p class="mb-1 text-muted">Type : {{ immeuble.type_bien }} | Unités : {{ immeuble.chambres.count }} / {{ immeuble.nombre_chambres }}</p>
+                                </div>
+                                <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-primary">Voir les détails</a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">Vous n'avez aucun immeuble enregistré pour le moment. Veuillez contacter votre agence.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
-{% endblock %}# Dans gestion/models.py
-
-from django.db import models
-from django.conf import settings
-
-# ... (votre modèle CustomUser est ici) ...
-
-class Bien(models.Model):
-    nom = models.CharField(max_length=200, help_text="Ex: Appartement T3 - Centre-ville")
-    adresse = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    
-    # Le propriétaire du bien
-    proprietaire = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='biens',
-        limit_choices_to={'user_type': 'PR'} # Un bien ne peut appartenir qu'à un Propriétaire
-    )
-    
-    # L'agence qui gère le bien (optionnel)
-    agence = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        related_name='biens_geres',
-        null=True,
-        blank=True,
-        limit_choices_to={'user_type': 'AG'} # Ne peut être géré que par une Agence
-    )
-
-    def __str__(self):
-        return self.nom
+{% endblock %}

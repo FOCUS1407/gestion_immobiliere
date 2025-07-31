@@ -3,7 +3,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 
-
+def user_profile_pic_path(instance, filename):
+    """Génère un chemin de fichier unique pour la photo de profil."""
+    # Le fichier sera uploadé dans MEDIA_ROOT/profile_pics/user_<id>/<filename>
+    return f'profile_pics/user_{instance.id}/{filename}'
 
 class CustomUser(AbstractUser):
     AGENCE = 'AG'
@@ -15,6 +18,8 @@ class CustomUser(AbstractUser):
     user_type = models.CharField(max_length=2, choices=USER_TYPE_CHOICES)
     telephone = models.CharField(max_length=20)
     addresse = models.TextField()
+    photo_profil = models.ImageField(upload_to=user_profile_pic_path, null=True, blank=True, verbose_name="Photo de profil")
+    must_change_password = models.BooleanField(default=False, verbose_name="Doit changer le mot de passe")
 
     class Meta:
         db_table = 'gestion_customuser'
@@ -34,36 +39,12 @@ class Agence(models.Model):
 class Proprietaire(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     agence = models.ForeignKey(Agence, on_delete=models.CASCADE, related_name='proprietaires')
-    nombre_bien = models.PositiveIntegerField(default=0)
     taux_commission = models.DecimalField(max_digits=5, decimal_places=2)
     date_debut_contrat = models.DateField()
     duree_contrat = models.PositiveIntegerField()  # en mois
 
     def __str__(self):
         return f"{self.user.get_full_name()}"
-
-class Bien(models.Model):
-    nom = models.CharField(max_length=200, help_text="Ex: Appartement T3 - Centre-ville")
-    adresse = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    
-    # Le propriétaire du bien
-    proprietaire = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='biens',
-        limit_choices_to={'user_type': 'PR'} # Un bien ne peut appartenir qu'à un Propriétaire
-    )
-    
-    # L'agence qui gère le bien (optionnel)
-    agence = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        related_name='biens_geres',
-        null=True,
-        blank=True,
-        limit_choices_to={'user_type': 'AG'} # Ne peut être géré que par une Agence
-    )
 
 class TypeBien(models.Model):
     RESIDENTIEL = 'RES'
@@ -89,6 +70,7 @@ class Immeuble(models.Model):
         return f"Immeuble {self.id} - {self.addresse[:20]}..."
 
 class Locataire(models.Model):
+    agence = models.ForeignKey(Agence, on_delete=models.CASCADE, related_name='locataires')
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
@@ -143,5 +125,21 @@ class Paiement(models.Model):
     moyen_paiement = models.ForeignKey(MoyenPaiement, on_delete=models.PROTECT)
     est_valide = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = ('location', 'mois_couvert')
+
     def __str__(self):
         return f"Paiement {self.montant}frcfa - {self.location}"
+
+class Notification(models.Model):
+    agence = models.ForeignKey(Agence, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    link = models.URLField(blank=True, null=True, help_text="Lien optionnel vers la ressource concernée")
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"Notif pour {self.agence.user.username} - {self.message[:30]}"

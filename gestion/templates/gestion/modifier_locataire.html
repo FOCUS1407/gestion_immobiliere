@@ -1,21 +1,21 @@
 {% extends 'base.html' %}
 
+{% block title %}Modifier le Locataire{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h3>Ajouter une nouvelle propriété</h3>
+                    <h3>Modifier le locataire : {{ locataire.prenom }} {{ locataire.nom }}</h3>
                 </div>
                 <div class="card-body">
-                    <form method="post" novalidate>
+                    <form method="post">
                         {% csrf_token %}
-                        
                         {{ form.as_p }}
-
-                        <button type="submit" class="btn btn-primary">Ajouter le bien</button>
-                        <a href="{% if user.user_type == 'AG' %}{% url 'gestion:tableau_de_bord_agence' %}{% else %}{% url 'gestion:tableau_de_bord_proprietaire' %}{% endif %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Enregistrer les modifications</button>
+                        <a href="{% url 'gestion:locataire_detail' locataire.pk %}" class="btn btn-secondary w-100 mt-2">Annuler</a>
                     </form>
                 </div>
             </div>

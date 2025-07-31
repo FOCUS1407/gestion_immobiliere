@@ -1,0 +1,64 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}Enregistrer un Paiement{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Enregistrer un Paiement</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Pour l'unité <strong>{{ chambre.designation }}</strong> ({{ chambre.immeuble.addresse }})<br>
+                        Locataire : <strong>{{ location.locataire }}</strong>
+                    </p>
+                    <hr>
+                    <form method="post" id="payment-form">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.montant.id_for_label }}" class="form-label">{{ form.montant.label }}</label>
+                                {{ form.montant }}
+                                {% if form.montant.errors %}<div class="invalid-feedback d-block">{{ form.montant.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.date_paiement.id_for_label }}" class="form-label">{{ form.date_paiement.label }}</label>
+                                {{ form.date_paiement }}
+                                {% if form.date_paiement.errors %}<div class="invalid-feedback d-block">{{ form.date_paiement.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.mois_couvert.id_for_label }}" class="form-label">{{ form.mois_couvert.label }}</label>
+                            {{ form.mois_couvert }}
+                            {% if form.mois_couvert.errors %}<div class="invalid-feedback d-block">{{ form.mois_couvert.errors }}</div>{% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.moyen_paiement.id_for_label }}" class="form-label">{{ form.moyen_paiement.label }}</label>
+                            {{ form.moyen_paiement }}
+                            {% if form.moyen_paiement.errors %}<div class="invalid-feedback d-block">{{ form.moyen_paiement.errors }}</div>{% endif %}
+                        </div>
+                        <div class="form-check mb-4">
+                            {{ form.est_valide }}
+                            <label class="form-check-label" for="{{ form.est_valide.id_for_label }}">{{ form.est_valide.label }}</label>
+                            {% if form.est_valide.errors %}<div class="invalid-feedback d-block">{{ form.est_valide.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer le paiement</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

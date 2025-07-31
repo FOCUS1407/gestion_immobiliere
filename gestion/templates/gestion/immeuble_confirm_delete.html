@@ -1,0 +1,33 @@
+{% extends "gestion/base.html" %}
+
+{% block title %}Confirmer la suppression{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Confirmer la suppression de l'immeuble</h4>
+                </div>
+                <div class="card-body">
+                    <p>Êtes-vous certain de vouloir supprimer l'immeuble situé à l'adresse suivante ?</p>
+                    <blockquote class="blockquote">
+                        <p>{{ immeuble.addresse }}</p>
+                    </blockquote>
+                    <p class="text-danger fw-bold">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Attention : Cette action est irréversible. Elle supprimera également toutes les unités, locations et paiements associés à cet immeuble.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-secondary me-2">Annuler</a>
+                            <button type="submit" class="btn btn-danger">Oui, supprimer définitivement</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
