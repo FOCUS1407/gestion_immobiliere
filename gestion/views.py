@@ -5,13 +5,14 @@ from django.contrib.auth.views import PasswordChangeDoneView
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
-from django.db import transaction, IntegrityError
-from django.db.models import Sum, Count
+from django.db import transaction, IntegrityError, models
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.http import HttpResponse
-from datetime import timedelta
+from datetime import datetime, timedelta
+from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 import locale
 import string
@@ -19,8 +20,8 @@ import random
 from django.urls import reverse
 import csv
 
-from gestion.forms import AgenceProfileForm, ChambreForm, ImmeubleForm, LocataireForm, LocationForm, LoginForm, MoyenPaiementForm, PaiementForm, ProprietaireCreationForm, ProprietaireProfileUpdateForm, RegisterForm, UserUpdateForm
-from gestion.models import Agence, CustomUser, Locataire, Location, MoyenPaiement, Notification, Paiement, Proprietaire, Immeuble,Chambre
+from gestion.forms import AgenceProfileForm, ChambreForm, EtatDesLieuxForm, ImmeubleForm, LocataireForm, LocationForm, LoginForm, MoyenPaiementForm, PaiementForm, ProprietaireCreationForm, ProprietaireProfileUpdateForm, RegisterForm, UserUpdateForm
+from gestion.models import Agence, CustomUser, EtatDesLieux, Locataire, Location, MoyenPaiement, Notification, Paiement, Proprietaire, Immeuble,Chambre
 
 try:
     from weasyprint import HTML
@@ -61,7 +62,7 @@ def connexion(request):
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            messages.success(request, f"Bienvenue, {user.username} !")
+            # messages.success(request, f"Bienvenue, {user.username} !") # Message de bienvenue supprimé.
             # Redirection vers le tableau de bord approprié
             if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
@@ -120,6 +121,7 @@ def tableau_de_bord_agence(request):
     # Récupère les propriétaires gérés par l'agence
     try:
         # On s'assure que l'utilisateur a un profil Agence avant de l'utiliser.
+        agence_profil = None # Initialisation
         agence_profil = request.user.agence
         # Récupère TOUS les propriétaires gérés et annote avec le nombre d'immeubles pour optimiser.
         all_proprietaires_list = Proprietaire.objects.filter(
@@ -135,6 +137,40 @@ def tableau_de_bord_agence(request):
         nombre_proprietaires = 0
         messages.warning(request, "Votre profil d'agence n'est pas complet. Certaines informations peuvent manquer.")
     
+    # --- Calcul du résumé financier pour le mois en cours ---
+    now = timezone.now()
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, '')
+    current_month_display = now.strftime('%B %Y').capitalize()
+    
+    total_attendu_mois = Decimal('0.00')
+    total_paye_mois = Decimal('0.00')
+    commission_mois = Decimal('0.00')
+
+    if agence_profil:
+        # Loyer total attendu pour le mois en cours pour les chambres occupées
+        total_attendu_mois = Chambre.objects.filter(
+            immeuble__proprietaire__agence=agence_profil,
+            locataire__isnull=False
+        ).aggregate(total=Sum('prix_loyer'))['total'] or Decimal('0.00')
+
+        # Paiements validés pour le mois en cours
+        paiements_mois = Paiement.objects.filter(
+            location__chambre__immeuble__proprietaire__agence=agence_profil,
+            mois_couvert=current_month_display,
+            est_valide=True
+        ).select_related('location__chambre__immeuble__proprietaire')
+
+        total_paye_mois = paiements_mois.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+        
+        for p in paiements_mois:
+            commission_rate = p.location.chambre.immeuble.proprietaire.taux_commission
+            commission_mois += p.montant * (commission_rate / Decimal('100.0'))
+
+    total_impaye_mois = total_attendu_mois - total_paye_mois
+
     # --- Pagination pour la liste des propriétaires ---
     paginator = Paginator(all_proprietaires_list, 10) # 10 propriétaires par page
     page_number = request.GET.get('page')
@@ -231,6 +267,11 @@ def tableau_de_bord_agence(request):
         'selected_proprietaire_id': selected_proprietaire_id,
         'chart_labels': chart_labels,
         'chart_data': chart_data,
+        'current_month_display': current_month_display,
+        'total_attendu_mois': total_attendu_mois,
+        'total_paye_mois': total_paye_mois,
+        'total_impaye_mois': total_impaye_mois,
+        'commission_mois': commission_mois,
     }
     return render(request, 'gestion/tableau_de_bord_agence.html', context)
 
@@ -265,36 +306,54 @@ def profil_utilisateur(request):
     et de son profil Agence si applicable.
     """
     user = request.user
-    agence_profil = None
+    agence_form = None
+    agence_profile = None
+    proprietaire_profile = None # Ajout pour le profil propriétaire
+
     if user.user_type == 'AG':
-        agence_profil, created = Agence.objects.get_or_create(user=user)
+        agence_profile, created = Agence.objects.get_or_create(user=user)
+    elif user.user_type == 'PR':
+        try:
+            proprietaire_profile = user.proprietaire
+        except Proprietaire.DoesNotExist:
+            # Ce cas ne devrait pas arriver dans un flux normal, mais on le gère.
+            messages.warning(request, "Votre profil de contrat est introuvable. Veuillez contacter votre agence.")
 
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, request.FILES, instance=user)
-        agence_form = None
+        
+        form_list = [user_form]
         if user.user_type == 'AG':
-            agence_form = AgenceProfileForm(request.POST, request.FILES, instance=agence_profil)
+            # On passe aussi request.FILES pour gérer l'upload du logo
+            agence_form = AgenceProfileForm(request.POST, request.FILES, instance=agence_profile)
+            form_list.append(agence_form)
+        # Note: Le propriétaire ne peut pas modifier son contrat ici. C'est géré par l'agence.
+        # On ne traite donc que le user_form pour lui.
 
-        if user_form.is_valid() and (agence_form is None or agence_form.is_valid()):
-            user_form.save()
-            if agence_form:
-                agence_form.save()
-            messages.success(request, "Votre profil a été mis à jour avec succès.")
-            if request.user.user_type == 'AG':
+        # On vérifie si tous les formulaires sont valides
+        if all(form.is_valid() for form in form_list):
+            for form in form_list:
+                form.save() # On sauvegarde chaque formulaire
+            
+            messages.success(request, 'Votre profil a été mis à jour avec succès.')
+            # Rediriger vers le tableau de bord approprié après la mise à jour
+            if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
-            else:
+            else: # 'PR'
                 return redirect('gestion:tableau_de_bord_proprietaire')
         else:
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
+        # En méthode GET, on affiche les formulaires avec les données actuelles
         user_form = UserUpdateForm(instance=user)
-        agence_form = None
         if user.user_type == 'AG':
-            agence_form = AgenceProfileForm(instance=agence_profil)
+            agence_form = AgenceProfileForm(instance=agence_profile)
 
     context = {
         'user_form': user_form,
-        'agence_form': agence_form
+        'agence_form': agence_form,
+        'proprietaire_profile': proprietaire_profile, # On passe le profil au template
+        'page_title': 'Modifier mon profil',
     }
     return render(request, 'gestion/profil.html', context)
 
@@ -871,38 +930,65 @@ def chambre_detail(request, pk):
 
     if not (is_managing_agence or is_owner):
         raise PermissionDenied("Vous n'avez pas la permission de voir cette unité.")
-    if request.method == 'POST':
-        # This block handles assigning a new tenant
-        if chambre.locataire is not None:
-            messages.error(request, "Cette chambre est déjà occupée.")
-            return redirect('gestion:chambre_detail', pk=pk)
 
-        form = LocationForm(request.POST, agence=request.user.agence)
-        if form.is_valid():
-            try:
+    # --- Récupération des données liées à la location active ---
+    location_active = Location.objects.filter(chambre=chambre, date_sortie__isnull=True).first()
+    etats_des_lieux = EtatDesLieux.objects.none()
+    if location_active:
+        etats_des_lieux = location_active.etats_des_lieux.all()
+
+    # --- Initialisation des formulaires ---
+    location_form = None
+    etat_des_lieux_form = None
+
+    if request.method == 'POST':
+        if not is_managing_agence:
+            raise PermissionDenied("Seule l'agence peut effectuer cette action.")
+
+        # Gère l'assignation d'un nouveau locataire
+        if 'submit_location' in request.POST:
+            if chambre.locataire is not None:
+                messages.error(request, "Cette chambre est déjà occupée.")
+                return redirect('gestion:chambre_detail', pk=pk)
+
+            location_form = LocationForm(request.POST, agence=request.user.agence)
+            if location_form.is_valid():
                 with transaction.atomic():
-                    location = form.save(commit=False)
+                    location = location_form.save(commit=False)
                     location.chambre = chambre
                     location.save()
-
                     chambre.locataire = location.locataire
                     chambre.save()
-                
-                messages.success(request, f"Le locataire {chambre.locataire.prenom} {chambre.locataire.nom} a été assigné à la chambre {chambre.designation}.")
+                messages.success(request, f"Le locataire {chambre.locataire} a été assigné à la chambre {chambre.designation}.")
                 return redirect('gestion:chambre_detail', pk=pk)
-            except Exception as e:
-                messages.error(request, f"Une erreur est survenue: {e}")
+
+        # Gère l'ajout d'un état des lieux
+        elif 'submit_etat_des_lieux' in request.POST:
+            if not location_active:
+                messages.error(request, "Aucune location active pour ajouter un état des lieux.")
+                return redirect('gestion:chambre_detail', pk=pk)
+            
+            etat_des_lieux_form = EtatDesLieuxForm(request.POST, request.FILES)
+            if etat_des_lieux_form.is_valid():
+                try:
+                    etat = etat_des_lieux_form.save(commit=False)
+                    etat.location = location_active
+                    etat.save()
+                    messages.success(request, "L'état des lieux a été ajouté avec succès.")
+                    return redirect('gestion:chambre_detail', pk=pk)
+                except IntegrityError:
+                    messages.error(request, f"Un état des lieux de ce type existe déjà pour cette location.")
+
     else: # GET request
-        form = LocationForm(agence=request.user.agence) if is_managing_agence and chambre.locataire is None else None
+        if is_managing_agence:
+            if chambre.locataire is None:
+                location_form = LocationForm(agence=request.user.agence)
+            if location_active:
+                etat_des_lieux_form = EtatDesLieuxForm()
 
     # --- Construction de l'historique complet des paiements (payés et arriérés) ---
-    location_active = None
     payment_history = []
     if chambre.locataire:
-        location_active = Location.objects.filter(
-            chambre=chambre, locataire=chambre.locataire, date_sortie__isnull=True
-        ).first()
-
         if location_active:
             # Récupérer tous les paiements validés et les mapper par mois pour un accès rapide
             paid_payments = {
@@ -936,11 +1022,80 @@ def chambre_detail(request, pk):
 
     context = {
         'chambre': chambre,
-        'form': form,
+        'location_form': location_form,
+        'etat_des_lieux_form': etat_des_lieux_form,
+        'etats_des_lieux': etats_des_lieux,
         'location_active': location_active,
         'payment_history': payment_history,
     }
     return render(request, 'gestion/chambre_detail.html', context)
+
+@login_required
+def modifier_etat_des_lieux(request, pk):
+    """
+    Gère la modification d'un état des lieux existant.
+    """
+    etat = get_object_or_404(EtatDesLieux, pk=pk)
+    chambre = etat.location.chambre
+
+    # Vérification de sécurité : Seule l'agence peut modifier.
+    is_managing_agence = False
+    if request.user.user_type == 'AG':
+        try:
+            if chambre.immeuble.proprietaire.agence == request.user.agence:
+                is_managing_agence = True
+        except (User.agence.RelatedObjectDoesNotExist, Proprietaire.DoesNotExist):
+            pass
+
+    if not is_managing_agence:
+        raise PermissionDenied("Seules les agences peuvent modifier un état des lieux.")
+
+    if request.method == 'POST':
+        form = EtatDesLieuxForm(request.POST, request.FILES, instance=etat)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "L'état des lieux a été mis à jour avec succès.")
+            return redirect('gestion:chambre_detail', pk=chambre.pk)
+    else:
+        form = EtatDesLieuxForm(instance=etat)
+
+    context = {
+        'form': form,
+        'etat': etat,
+        'chambre': chambre,
+    }
+    return render(request, 'gestion/modifier_etat_des_lieux.html', context)
+
+@login_required
+def supprimer_etat_des_lieux(request, pk):
+    """
+    Gère la suppression d'un état des lieux.
+    """
+    etat = get_object_or_404(EtatDesLieux, pk=pk)
+    chambre = etat.location.chambre
+
+    # Vérification de sécurité : Seule l'agence peut supprimer.
+    is_managing_agence = False
+    if request.user.user_type == 'AG':
+        try:
+            if chambre.immeuble.proprietaire.agence == request.user.agence:
+                is_managing_agence = True
+        except (User.agence.RelatedObjectDoesNotExist, Proprietaire.DoesNotExist):
+            pass
+
+    if not is_managing_agence:
+        raise PermissionDenied("Seules les agences peuvent supprimer un état des lieux.")
+
+    if request.method == 'POST':
+        etat.delete()
+        messages.success(request, "L'état des lieux a été supprimé avec succès.")
+        return redirect('gestion:chambre_detail', pk=chambre.pk)
+
+    context = {
+        'etat': etat,
+        'chambre': chambre,
+    }
+    return render(request, 'gestion/etat_des_lieux_confirm_delete.html', context)
 
 @login_required
 def liberer_chambre(request, pk):
@@ -1286,3 +1441,176 @@ def notification_list(request):
         'notifications_page': notifications_page,
     }
     return render(request, 'gestion/notification_list.html', context)
+
+@login_required
+def rapport_financier(request):
+    """
+    Génère un rapport financier sur les loyers attendus, payés, impayés et les commissions,
+    filtrable par propriétaire et par mois.
+    """
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seuls les utilisateurs de type agence peuvent accéder à ce rapport.")
+
+    try:
+        agence = request.user.agence
+    except Agence.DoesNotExist:
+        messages.error(request, "Votre profil d'agence est incomplet.")
+        return redirect('gestion:profil')
+
+    # --- Gestion des filtres ---
+    proprietaires_agence = Proprietaire.objects.filter(agence=agence).select_related('user').order_by('user__last_name')
+    selected_owner_id = request.GET.get('proprietaire_id')
+    selected_month_str = request.GET.get('mois', datetime.now().strftime('%Y-%m'))
+
+    try:
+        selected_month_date = datetime.strptime(selected_month_str, '%Y-%m')
+    except ValueError:
+        selected_month_date = datetime.now()
+        selected_month_str = selected_month_date.strftime('%Y-%m')
+
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, '')
+    mois_couvert_str = selected_month_date.strftime('%B %Y').capitalize()
+
+    proprietaires_a_traiter = proprietaires_agence
+    if selected_owner_id and selected_owner_id.isdigit():
+        proprietaires_a_traiter = proprietaires_a_traiter.filter(pk=selected_owner_id)
+
+    # --- Calcul des données ---
+    report_details = []
+    grand_total_attendu = Decimal('0.00')
+    grand_total_paye = Decimal('0.00')
+
+    for proprietaire in proprietaires_a_traiter:
+        owner_total_attendu = Decimal('0.00')
+        owner_total_paye = Decimal('0.00')
+        immeubles_data = []
+
+        immeubles = Immeuble.objects.filter(proprietaire=proprietaire)
+        for immeuble in immeubles:
+            chambres = Chambre.objects.filter(immeuble=immeuble)
+            loyer_attendu_immeuble = chambres.filter(locataire__isnull=False).aggregate(total=Sum('prix_loyer'))['total'] or Decimal('0.00')
+            loyer_paye_immeuble = Paiement.objects.filter(
+                location__chambre__in=chambres,
+                mois_couvert=mois_couvert_str,
+                est_valide=True
+            ).aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+
+            immeubles_data.append({
+                'immeuble': immeuble, 'total_attendu': loyer_attendu_immeuble,
+                'total_paye': loyer_paye_immeuble, 'total_impaye': loyer_attendu_immeuble - loyer_paye_immeuble,
+            })
+            owner_total_attendu += loyer_attendu_immeuble
+            owner_total_paye += loyer_paye_immeuble
+
+        commission = owner_total_paye * (proprietaire.taux_commission / Decimal('100.0'))
+        report_details.append({
+            'proprietaire': proprietaire,
+            'immeubles_data': immeubles_data,
+            'owner_total_attendu': owner_total_attendu,
+            'owner_total_paye': owner_total_paye,
+            'owner_total_impaye': owner_total_attendu - owner_total_paye,
+            'commission': commission,
+        })
+        grand_total_attendu += owner_total_attendu
+        grand_total_paye += owner_total_paye
+
+    grand_total_impaye = grand_total_attendu - grand_total_paye
+    grand_total_commission = sum(item['commission'] for item in report_details)
+
+    context = {
+        'report_details': report_details,
+        'proprietaires_agence': proprietaires_agence,
+        'selected_owner_id': int(selected_owner_id) if selected_owner_id and selected_owner_id.isdigit() else None,
+        'selected_month_str': selected_month_str,
+        'mois_couvert_str': mois_couvert_str,
+        'grand_total_attendu': grand_total_attendu,
+        'grand_total_paye': grand_total_paye,
+        'grand_total_impaye': grand_total_impaye,
+        'grand_total_commission': grand_total_commission,
+        'page_title': 'Rapport Financier Mensuel',
+    }
+    return render(request, 'gestion/rapport_financier.html', context)
+
+@login_required
+def generer_rapport_financier_pdf(request):
+    """
+    Génère le rapport financier en PDF.
+    Reprend la logique de la vue `rapport_financier`.
+    """
+    if HTML is None:
+        return HttpResponse("La bibliothèque WeasyPrint est requise pour générer des PDF. Veuillez l'installer avec 'pip install WeasyPrint'.", status=501)
+
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seuls les utilisateurs de type agence peuvent accéder à ce rapport.")
+
+    try:
+        agence = request.user.agence
+    except Agence.DoesNotExist:
+        messages.error(request, "Votre profil d'agence est incomplet.")
+        return redirect('gestion:profil')
+
+    # --- Reprise de la logique de filtrage et de calcul de `rapport_financier` ---
+    proprietaires_agence = Proprietaire.objects.filter(agence=agence).select_related('user').order_by('user__last_name')
+    selected_owner_id = request.GET.get('proprietaire_id')
+    selected_month_str = request.GET.get('mois', datetime.now().strftime('%Y-%m'))
+
+    try:
+        selected_month_date = datetime.strptime(selected_month_str, '%Y-%m')
+    except ValueError:
+        selected_month_date = datetime.now()
+        selected_month_str = selected_month_date.strftime('%Y-%m')
+
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, '')
+    mois_couvert_str = selected_month_date.strftime('%B %Y').capitalize()
+
+    proprietaires_a_traiter = proprietaires_agence
+    proprietaire_filtre = None
+    if selected_owner_id and selected_owner_id.isdigit():
+        proprietaires_a_traiter = proprietaires_a_traiter.filter(pk=selected_owner_id)
+        proprietaire_filtre = proprietaires_agence.filter(pk=selected_owner_id).first()
+
+    report_details = []
+    grand_total_attendu = Decimal('0.00')
+    grand_total_paye = Decimal('0.00')
+
+    for proprietaire in proprietaires_a_traiter:
+        # ... (La logique de calcul est identique à la vue rapport_financier) ...
+        owner_total_attendu = Decimal('0.00')
+        owner_total_paye = Decimal('0.00')
+        immeubles_data = []
+
+        immeubles = Immeuble.objects.filter(proprietaire=proprietaire)
+        for immeuble in immeubles:
+            chambres = Chambre.objects.filter(immeuble=immeuble)
+            loyer_attendu_immeuble = chambres.filter(locataire__isnull=False).aggregate(total=Sum('prix_loyer'))['total'] or Decimal('0.00')
+            loyer_paye_immeuble = Paiement.objects.filter(location__chambre__in=chambres, mois_couvert=mois_couvert_str, est_valide=True).aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+            immeubles_data.append({'immeuble': immeuble, 'total_attendu': loyer_attendu_immeuble, 'total_paye': loyer_paye_immeuble, 'total_impaye': loyer_attendu_immeuble - loyer_paye_immeuble})
+            owner_total_attendu += loyer_attendu_immeuble
+            owner_total_paye += loyer_paye_immeuble
+
+        commission = owner_total_paye * (proprietaire.taux_commission / Decimal('100.0'))
+        report_details.append({'proprietaire': proprietaire, 'immeubles_data': immeubles_data, 'owner_total_attendu': owner_total_attendu, 'owner_total_paye': owner_total_paye, 'owner_total_impaye': owner_total_attendu - owner_total_paye, 'commission': commission})
+        grand_total_attendu += owner_total_attendu
+        grand_total_paye += owner_total_paye
+
+    grand_total_impaye = grand_total_attendu - grand_total_paye
+    grand_total_commission = sum(item['commission'] for item in report_details)
+
+    context = {
+        'report_details': report_details, 'mois_couvert_str': mois_couvert_str, 'proprietaire_filtre': proprietaire_filtre,
+        'grand_total_attendu': grand_total_attendu, 'grand_total_paye': grand_total_paye, 'grand_total_impaye': grand_total_impaye,
+        'grand_total_commission': grand_total_commission, 'agence': agence, 'date_generation': timezone.now().date(),
+    }
+
+    html_string = render_to_string('gestion/rapport_financier_pdf.html', context)
+    pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="rapport_financier_{selected_month_str}.pdf"'
+    return response

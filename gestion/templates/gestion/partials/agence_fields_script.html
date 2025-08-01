@@ -1,0 +1,24 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userTypeRadios = document.querySelectorAll('input[name="user_type"]');
+    const agenceFields = document.getElementById('agence-fields');
+    // La valeur 'AG' correspond à 'Agence' dans le modèle CustomUser.
+    const agenceRadioValue = 'AG';
+
+    function toggleAgenceFields() {
+        const selectedRadio = document.querySelector('input[name="user_type"]:checked');
+        if (selectedRadio && selectedRadio.value === agenceRadioValue) {
+            agenceFields.style.display = 'block';
+        } else {
+            agenceFields.style.display = 'none';
+        }
+    }
+
+    userTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleAgenceFields);
+    });
+
+    // Vérification initiale au chargement de la page
+    toggleAgenceFields();
+});
+</script>

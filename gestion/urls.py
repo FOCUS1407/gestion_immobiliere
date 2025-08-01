@@ -29,9 +29,11 @@ urlpatterns = [
     path('reinitialisation/', 
          auth_views.PasswordResetView.as_view(
              template_name='gestion/password_reset_form.html',
-             email_template_name='gestion/password_reset_email.html',
+             email_template_name='gestion/email/password_reset_email.html',
+             html_email_template_name='gestion/email/password_reset_email.html',
              subject_template_name='gestion/password_reset_subject.txt',
-             success_url=reverse_lazy('gestion:password_reset_done')
+             success_url=reverse_lazy('gestion:password_reset_done'),
+             form_class=forms.CustomPasswordResetForm
          ), 
          name='reinitialisation'),
     path('reinitialisation/envoye/', 
@@ -87,10 +89,16 @@ urlpatterns = [
     path('paiements/<int:pk>/supprimer/', views.supprimer_paiement, name='supprimer_paiement'),
     path('paiements/<int:pk>/quittance/', views.generer_quittance_pdf, name='generer_quittance_pdf'),
 
+    # Gestion des États des Lieux
+    path('etats-des-lieux/<int:pk>/modifier/', views.modifier_etat_des_lieux, name='modifier_etat_des_lieux'),
+    path('etats-des-lieux/<int:pk>/supprimer/', views.supprimer_etat_des_lieux, name='supprimer_etat_des_lieux'),
+
     # Paramètres et Exports
     path('parametres/moyens-paiement/', views.gerer_moyens_paiement, name='gerer_moyens_paiement'),
     path('parametres/moyens-paiement/<int:pk>/supprimer/', views.supprimer_moyen_paiement, name='supprimer_moyen_paiement'),
     path('export/paiements/csv/', views.exporter_paiements_csv, name='exporter_paiements_csv'),
+    path('rapports/financier/', views.rapport_financier, name='rapport_financier'),
+    path('rapports/financier/pdf/', views.generer_rapport_financier_pdf, name='generer_rapport_financier_pdf'),
 
     # Notifications
     path('notifications/', views.notification_list, name='notification_list'),

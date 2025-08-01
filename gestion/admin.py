@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
     CustomUser, Agence, Proprietaire, TypeBien, Immeuble, 
-    Locataire, MoyenPaiement, Chambre, Location, Paiement
+    Locataire, MoyenPaiement, Chambre, Location, Paiement, EtatDesLieux
 )
 from django.db.models import Count
 
@@ -39,8 +39,8 @@ class CustomUserAdmin(UserAdmin):
 # Configuration pour les agences
 @admin.register(Agence)
 class AgenceAdmin(admin.ModelAdmin):
-    list_display = ('user', 'siret', 'date_creation')
-    search_fields = ('user__username', 'siret')
+    list_display = ('user', 'rccm', 'nif', 'date_creation')
+    search_fields = ('user__username', 'rccm', 'nif')
     raw_id_fields = ('user',)
 
 # Configuration pour les propriétaires
@@ -124,3 +124,11 @@ class PaiementAdmin(admin.ModelAdmin):
     raw_id_fields = ('location',)
     date_hierarchy = 'date_paiement'
     list_per_page = 30
+
+# Configuration pour les états des lieux
+@admin.register(EtatDesLieux)
+class EtatDesLieuxAdmin(admin.ModelAdmin):
+    list_display = ('location', 'type_etat', 'date_etat', 'document_signe')
+    list_filter = ('type_etat', 'date_etat')
+    search_fields = ('location__chambre__designation', 'location__locataire__nom')
+    raw_id_fields = ('location',)

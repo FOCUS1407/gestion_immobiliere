@@ -35,7 +35,6 @@ class BaseTestCase(TestCase):
         )
         
         # Créer les profils associés
-        cls.agence = Agence.objects.create(user=cls.agence_user, siret='12345678901234')
         cls.proprietaire = Proprietaire.objects.create(
             user=cls.proprietaire_user, 
             agence=cls.agence,

@@ -41,13 +41,13 @@
                         {% endif %}
                     {% else %}
                         <p><strong>Statut :</strong> <span class="badge bg-success">Libre</span></p>
-                        {% if form %}
+                        {% if location_form %}
                             <hr>
                             <h6 class="mb-3">Assigner un nouveau locataire</h6>
-                            <form method="post">
+                            <form method="post" name="assign_tenant">
                                 {% csrf_token %}
-                                {{ form.as_p }}
-                                <button type="submit" class="btn btn-primary">Assigner le locataire</button>
+                                {{ location_form.as_p }}
+                                <button type="submit" name="submit_location" class="btn btn-primary">Assigner le locataire</button>
                             </form>
                         {% endif %}
                     {% endif %}
@@ -55,7 +55,7 @@
             </div>
 
             <!-- Historique des paiements -->
-            <div class="card shadow-sm">
+            <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Historique des Paiements</h5>
                     {% if request.user.user_type == 'AG' and chambre.locataire %}
@@ -119,6 +119,56 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- État des Lieux Section -->
+            {% if location_active %}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">États des Lieux</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Rapports existants</h5>
+                    {% if etats_des_lieux %}
+                        <ul class="list-group list-group-flush">
+                            {% for etat in etats_des_lieux %}
+                                <li class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ etat.get_type_etat_display }}</h6>
+                                            <p class="mb-1 text-muted small">Date: {{ etat.date_etat|date:"d F Y" }}</p>
+                                            <p class="mb-0">{{ etat.description|linebreaksbr|truncatewords:30 }}</p>
+                                        </div>
+                                        <div class="text-end">
+                                            {% if etat.document_signe %}
+                                                <a href="{{ etat.document_signe.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-file-alt me-1"></i> Voir le document
+                                                </a>
+                                            {% endif %}
+                                            {% if request.user.user_type == 'AG' %}
+                                                <a href="{% url 'gestion:modifier_etat_des_lieux' etat.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="fas fa-edit"></i></a>
+                                                <a href="{% url 'gestion:supprimer_etat_des_lieux' etat.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fas fa-trash"></i></a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Aucun état des lieux n'a été enregistré pour cette location.</p>
+                    {% endif %}
+
+                    {% if request.user.user_type == 'AG' and etat_des_lieux_form %}
+                        <hr class="my-4">
+                        <h5>Ajouter un nouvel état des lieux</h5>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ etat_des_lieux_form.as_p }}
+                            <button type="submit" name="submit_etat_des_lieux" class="btn btn-primary mt-2">Enregistrer le rapport</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
         <div class="col-lg-4">
             <!-- Informations sur l'unité -->

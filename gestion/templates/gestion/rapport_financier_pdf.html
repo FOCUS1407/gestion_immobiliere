@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Financier - {{ mois_couvert_str }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        h1, h2, h3, h4 {
+            font-weight: bold;
+            color: #000;
+        }
+        h1 { font-size: 24pt; margin-bottom: 0; }
+        h2 { font-size: 16pt; border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 20px; }
+        h3 { font-size: 12pt; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-end { text-align: right; }
+        .text-success { color: #198754; }
+        .text-danger { color: #dc3545; }
+        .fw-bold { font-weight: bold; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+        }
+        .header .agency-info { text-align: left; }
+        .header .report-info { text-align: right; }
+        .owner-section {
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        tfoot {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    {% load humanize %}
+    <div class="header">
+        <div class="agency-info">
+            {% if agence.logo %}
+                <img src="{{ agence.logo.url }}" alt="Logo" style="max-width: 150px; max-height: 70px; margin-bottom: 10px;">
+            {% endif %}
+            <h2>{{ agence.user.get_full_name|default:agence.user.username }}</h2>
+            <p>
+                {% if agence.user.addresse %}{{ agence.user.addresse|linebreaksbr }}{% endif %}<br>
+                {{ agence.user.email }}<br>
+                {{ agence.user.telephone }}
+            </p>
+        </div>
+        <div class="report-info">
+            <h1>Rapport Financier</h1>
+            <p>
+                <strong>Mois :</strong> {{ mois_couvert_str }}<br>
+                <strong>Généré le :</strong> {{ date_generation|date:"d F Y" }}<br>
+                {% if proprietaire_filtre %}
+                <strong>Propriétaire :</strong> {{ proprietaire_filtre.user.get_full_name|default:proprietaire_filtre.user.username }}
+                {% else %}
+                <strong>Propriétaire :</strong> Tous
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <h2>Résumé Global</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-end">Montant (Frcfa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total Loyer Attendu</td>
+                <td class="text-end">{{ grand_total_attendu|floatformat:0|intcomma }}</td>
+            </tr>
+            <tr>
+                <td>Total Loyer Payé</td>
+                <td class="text-end text-success">{{ grand_total_paye|floatformat:0|intcomma }}</td>
+            </tr>
+            <tr>
+                <td>Total Loyer Impayé</td>
+                <td class="text-end text-danger">{{ grand_total_impaye|floatformat:0|intcomma }}</td>
+            </tr>
+            <tr class="fw-bold">
+                <td>Commission Agence</td>
+                <td class="text-end">{{ grand_total_commission|floatformat:0|intcomma }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% for detail in report_details %}
+    <div class="owner-section">
+        <h2>Détail pour : {{ detail.proprietaire.user.get_full_name|default:detail.proprietaire.user.username }}</h2>
+        <h3>Commission Agence : <span class="text-success">{{ detail.commission|floatformat:0|intcomma }} Frcfa</span></h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Immeuble</th>
+                    <th class="text-end">Loyer Attendu</th>
+                    <th class="text-end">Loyer Payé</th>
+                    <th class="text-end">Loyer Impayé</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in detail.immeubles_data %}
+                <tr>
+                    <td>{{ data.immeuble.addresse|truncatechars:50 }}</td>
+                    <td class="text-end">{{ data.total_attendu|floatformat:0|intcomma }}</td>
+                    <td class="text-end text-success">{{ data.total_paye|floatformat:0|intcomma }}</td>
+                    <td class="text-end text-danger">{{ data.total_impaye|floatformat:0|intcomma }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4">Ce propriétaire n'a aucun immeuble.</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-bold">
+                    <td>Total Propriétaire</td>
+                    <td class="text-end">{{ detail.owner_total_attendu|floatformat:0|intcomma }}</td>
+                    <td class="text-end text-success">{{ detail.owner_total_paye|floatformat:0|intcomma }}</td>
+                    <td class="text-end text-danger">{{ detail.owner_total_impaye|floatformat:0|intcomma }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% endfor %}
+</body>
+</html>

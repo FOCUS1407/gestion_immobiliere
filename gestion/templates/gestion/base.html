@@ -70,6 +70,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <li><a class="dropdown-item" href="{% url 'gestion:profil' %}"><i class="fas fa-user-edit me-2"></i>Mon Profil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'gestion:changer_mdp' %}"><i class="fas fa-key me-2"></i>Changer le mot de passe</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{% url 'gestion:logout' %}" method="post" class="d-inline">

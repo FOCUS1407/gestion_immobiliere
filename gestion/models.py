@@ -2,11 +2,20 @@ from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
+from django.utils import timezone
+
+def agence_logo_path(instance, filename):
+    """Génère un chemin de fichier unique pour le logo de l'agence."""
+    return f'agence_logos/agence_{instance.id}/{filename}'
 
 def user_profile_pic_path(instance, filename):
     """Génère un chemin de fichier unique pour la photo de profil."""
     # Le fichier sera uploadé dans MEDIA_ROOT/profile_pics/user_<id>/<filename>
     return f'profile_pics/user_{instance.id}/{filename}'
+
+def etat_des_lieux_path(instance, filename):
+    """Génère un chemin de fichier unique pour le document d'état des lieux."""
+    return f'etats_des_lieux/location_{instance.location.id}/{instance.type_etat}_{filename}'
 
 class CustomUser(AbstractUser):
     AGENCE = 'AG'
@@ -29,7 +38,9 @@ class CustomUser(AbstractUser):
 
 class Agence(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    siret = models.CharField(max_length=14, unique=True)
+    logo = models.ImageField(upload_to=agence_logo_path, null=True, blank=True, verbose_name="Logo de l'agence")
+    rccm = models.CharField("Numéro RCCM", max_length=50, unique=True, null=True, blank=True)
+    nif = models.CharField("Numéro NIF", max_length=50, unique=True, null=True, blank=True)
     date_creation = models.DateField(auto_now_add=True)
 
 
@@ -130,6 +141,30 @@ class Paiement(models.Model):
 
     def __str__(self):
         return f"Paiement {self.montant}frcfa - {self.location}"
+
+class EtatDesLieux(models.Model):
+    ENTREE = 'ENT'
+    SORTIE = 'SOR'
+    TYPE_CHOICES = [
+        (ENTREE, "État des lieux d'entrée"),
+        (SORTIE, "État des lieux de sortie"),
+    ]
+
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='etats_des_lieux')
+    type_etat = models.CharField(max_length=3, choices=TYPE_CHOICES, verbose_name="Type de rapport")
+    date_etat = models.DateField(default=timezone.now, verbose_name="Date du rapport")
+    description = models.TextField(verbose_name="Description générale de l'état (murs, sols, équipements, etc.)")
+    document_signe = models.FileField(upload_to=etat_des_lieux_path, null=True, blank=True, verbose_name="Document signé (PDF, Image)")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "État des lieux"
+        verbose_name_plural = "États des lieux"
+        unique_together = ('location', 'type_etat')
+        ordering = ['-date_etat']
+
+    def __str__(self):
+        return f"{self.get_type_etat_display()} pour {self.location}"
 
 class Notification(models.Model):
     agence = models.ForeignKey(Agence, on_delete=models.CASCADE, related_name='notifications')

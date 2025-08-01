@@ -1,21 +1,56 @@
 {% extends 'gestion/base.html' %}
+{% load humanize %}
 
 {% block content %}
 <h1 class="mb-4">Tableau de bord de l'Agence</h1>
 
     <p class="lead">Bienvenue, {{ user.username }} !</p>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Résumé Financier du Mois en cours -->
+    <h3 class="mt-4 mb-3">Résumé Financier de {{ current_month_display }}</h3>
+    <div class="row mb-2">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Attendu</h6>
+                    <h4 class="card-text">{{ total_attendu_mois|floatformat:0|intcomma }} Frcfa</h4>
+                </div>
             </div>
-        {% endfor %}
-    {% endif %}
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Payé</h6>
+                    <h4 class="card-text">{{ total_paye_mois|floatformat:0|intcomma }} Frcfa</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Impayé</h6>
+                    <h4 class="card-text">{{ total_impaye_mois|floatformat:0|intcomma }} Frcfa</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-dark bg-warning h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Commission Agence</h6>
+                    <h4 class="card-text">{{ commission_mois|floatformat:0|intcomma }} Frcfa</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="text-end mb-4">
+        <a href="{% url 'gestion:rapport_financier' %}" class="btn btn-outline-primary">Voir le rapport financier détaillé <i class="fas fa-arrow-right ms-2"></i></a>
+    </div>
 
+    <hr class="my-4">
+
+    <h3>Statistiques Globales</h3>
     <div class="row">
-        <!-- Statistiques rapides (données en dur pour l'exemple) -->
+        <!-- Statistiques globales -->
         <div class="col-md-4">
             <div class="card text-white bg-dark mb-3">
                 <div class="card-header">Immeubles Gérés</div>

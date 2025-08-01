@@ -1,0 +1,23 @@
+{% extends 'gestion/base.html' %}
+
+{% block title %}Modifier l'état des lieux{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Modifier l'état des lieux</h1>
+    <p>Pour la location de la chambre <strong>{{ chambre.designation }}</strong> dans l'immeuble <strong>{{ chambre.immeuble.addresse }}</strong>.</p>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-secondary">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

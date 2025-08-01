@@ -1,61 +1,151 @@
-{% extends "gestion/base.html" %}
+{% extends 'gestion/base.html' %}
 
-{% block title %}Mon Profil{% endblock %}
+{% block title %}{{ page_title }} - Rent Solution{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
+        <div class="col-lg-8">
+            <h2 class="mb-4">{{ page_title }}</h2>
+
             <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Modifier mon profil</h4>
-                </div>
-                <div class="card-body">
-                    <!-- IMPORTANT: enctype est nécessaire pour l'upload de fichiers -->
+                <div class="card-body p-4">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
-                        <div class="row">
-                            <div class="col-md-4 text-center">
-                                {% if user.photo_profil %}
-                                    <img src="{{ user.photo_profil.url }}" alt="Photo de profil" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
-                                {% else %}
-                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
-                                        <i class="fas fa-user fa-4x text-secondary"></i>
-                                    </div>
-                                {% endif %}
-                                <div class="mb-3">
-                                    <label for="{{ user_form.photo_profil.id_for_label }}" class="form-label small">Changer la photo</label>
-                                    {{ user_form.photo_profil }}
-                                </div>
-                            </div>
-                            <div class="col-md-8">
-                                <h5 class="border-bottom pb-2 mb-3">Informations personnelles</h5>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">{{ user_form.first_name.label_tag }} {{ user_form.first_name }}</div>
-                                    <div class="col-md-6 mb-3">{{ user_form.last_name.label_tag }} {{ user_form.last_name }}</div>
-                                </div>
-                                <div class="mb-3">{{ user_form.email.label_tag }} {{ user_form.email }}</div>
-                                <div class="mb-3">{{ user_form.telephone.label_tag }} {{ user_form.telephone }}</div>
-                                <div class="mb-3">{{ user_form.addresse.label_tag }} {{ user_form.addresse }}</div>
+                        <!-- Nav tabs -->
+                        <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general-pane" type="button" role="tab" aria-controls="general-pane" aria-selected="true">Informations générales</button>
+                            </li>
+                            {% if agence_form %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="agence-tab" data-bs-toggle="tab" data-bs-target="#agence-pane" type="button" role="tab" aria-controls="agence-pane" aria-selected="false">Informations de l'agence</button>
+                            </li>
+                            {% endif %}
+                            {% if proprietaire_profile %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="contrat-tab" data-bs-toggle="tab" data-bs-target="#contrat-pane" type="button" role="tab" aria-controls="contrat-pane" aria-selected="false">Mon Contrat</button>
+                            </li>
+                            {% endif %}
+                        </ul>
 
-                                {% if agence_form %}
-                                    <h5 class="border-bottom pb-2 my-3">Informations de l'agence</h5>
-                                    <div class="mb-3">{{ agence_form.siret.label_tag }} {{ agence_form.siret }}</div>
-                                {% endif %}
+                        <!-- Tab content -->
+                        <div class="tab-content pt-4" id="profileTabContent">
+                            <!-- General Info Pane -->
+                            <div class="tab-pane fade show active" id="general-pane" role="tabpanel" aria-labelledby="general-tab" tabindex="0">
+                                <div class="row">
+                                    <div class="col-md-4 text-center">
+                                        {% if user.photo_profil %}
+                                            <img src="{{ user.photo_profil.url }}" alt="Photo de profil" class="img-thumbnail rounded-circle mb-2" style="width: 150px; height: 150px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 150px; height: 150px;">
+                                                <span style="font-size: 3rem;">{{ user.username.0|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                        <div class="mb-3">
+                                            <label for="{{ user_form.photo_profil.id_for_label }}" class="form-label small">Changer la photo</label>
+                                            {{ user_form.photo_profil }}
+                                            {{ user_form.photo_profil.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            <label for="{{ user_form.first_name.id_for_label }}" class="form-label">{{ user_form.first_name.label }}</label>
+                                            {{ user_form.first_name }}
+                                            {{ user_form.first_name.errors }}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="{{ user_form.last_name.id_for_label }}" class="form-label">{{ user_form.last_name.label }}</label>
+                                            {{ user_form.last_name }}
+                                            {{ user_form.last_name.errors }}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="{{ user_form.email.id_for_label }}" class="form-label">{{ user_form.email.label }}</label>
+                                            {{ user_form.email }}
+                                            {{ user_form.email.errors }}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="{{ user_form.telephone.id_for_label }}" class="form-label">{{ user_form.telephone.label }}</label>
+                                            {{ user_form.telephone }}
+                                            {{ user_form.telephone.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="{{ user_form.addresse.id_for_label }}" class="form-label">{{ user_form.addresse.label }}</label>
+                                    {{ user_form.addresse }}
+                                    {{ user_form.addresse.errors }}
+                                </div>
                             </div>
+
+                            <!-- Agency Info Pane -->
+                            {% if agence_form %}
+                            <div class="tab-pane fade" id="agence-pane" role="tabpanel" aria-labelledby="agence-tab" tabindex="0">
+                                <div class="row">
+                                    <div class="col-md-4 text-center">
+                                        {% if agence_form.instance.logo %}
+                                            <img src="{{ agence_form.instance.logo.url }}" alt="Logo de l'agence" class="img-thumbnail mb-2" style="max-width: 150px;">
+                                        {% else %}
+                                            <div class="bg-light border rounded d-flex align-items-center justify-content-center mb-2" style="width: 150px; height: 150px;">
+                                                <span class="text-muted">Aucun logo</span>
+                                            </div>
+                                        {% endif %}
+                                        <div class="mb-3">
+                                            <label for="{{ agence_form.logo.id_for_label }}" class="form-label small">{{ agence_form.logo.label }}</label>
+                                            {{ agence_form.logo }}
+                                            {{ agence_form.logo.errors }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="mb-3">
+                                            {{ agence_form.rccm.label_tag }}
+                                            {{ agence_form.rccm }}
+                                            {{ agence_form.rccm.errors }}
+                                        </div>
+                                        <div class="mb-3">
+                                            {{ agence_form.nif.label_tag }}
+                                            {{ agence_form.nif }}
+                                            {{ agence_form.nif.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Contract Info Pane (Read-only for owner) -->
+                            {% if proprietaire_profile %}
+                            <div class="tab-pane fade" id="contrat-pane" role="tabpanel" aria-labelledby="contrat-tab" tabindex="0">
+                                <h5 class="mb-3">Détails de votre contrat avec l'agence</h5>
+                                <p><strong>Taux de commission :</strong> {{ proprietaire_profile.taux_commission }}%</p>
+                                <p><strong>Date de début du contrat :</strong> {{ proprietaire_profile.date_debut_contrat|date:"d F Y" }}</p>
+                                <p><strong>Durée du contrat :</strong> {{ proprietaire_profile.duree_contrat }} mois</p>
+                                <p class="text-muted small mt-3">Pour toute modification de votre contrat, veuillez contacter directement votre agence.</p>
+                            </div>
+                            {% endif %}
                         </div>
 
-                        <hr>
-
-                        <div class="d-flex justify-content-between align-items-center mt-4">
-                            <a href="{% url 'gestion:changer_mdp' %}" class="btn btn-outline-secondary">Changer mon mot de passe</a>
-                            <div>
-                                <a href="{% if user.user_type == 'AG' %}{% url 'gestion:tableau_de_bord_agence' %}{% else %}{% url 'gestion:tableau_de_bord_proprietaire' %}{% endif %}" class="btn btn-secondary me-2">Annuler</a>
-                                <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-                            </div>
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            {% if user.user_type == 'AG' %}
+                                <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary">Annuler</a>
+                            {% else %}
+                                <a href="{% url 'gestion:tableau_de_bord_proprietaire' %}" class="btn btn-secondary">Annuler</a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">Mettre à jour le profil</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Sécurité</h5>
+                </div>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="mb-0">Mettez à jour votre mot de passe régulièrement pour protéger votre compte.</p>
+                    </div>
+                    <a href="{% url 'gestion:changer_mdp' %}" class="btn btn-primary flex-shrink-0">Changer le mot de passe</a>
                 </div>
             </div>
         </div>

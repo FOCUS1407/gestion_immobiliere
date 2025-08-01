@@ -1,21 +1,16 @@
-{% extends "gestion/base.html" %}
+{% extends 'gestion/base.html' %}
 
 {% block title %}Mot de passe changé{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-lg-6">
             <div class="card shadow-sm text-center">
                 <div class="card-body p-5">
-                    <h4 class="card-title">Mot de passe changé avec succès !</h4>
-                    <p class="card-text text-muted">Votre mot de passe a été mis à jour.</p>
-                    
-                    {% if user.user_type == 'AG' %}
-                        <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-primary mt-3">Retour au tableau de bord</a>
-                    {% else %}
-                        <a href="{% url 'gestion:tableau_de_bord_proprietaire' %}" class="btn btn-primary mt-3">Retour au tableau de bord</a>
-                    {% endif %}
+                    <h2 class="card-title mb-4">Mot de passe changé avec succès !</h2>
+                    <p>Votre mot de passe a été mis à jour.</p>
+                    <a href="{% url 'gestion:profil' %}" class="btn btn-primary mt-3">Retour au profil</a>
                 </div>
             </div>
         </div>

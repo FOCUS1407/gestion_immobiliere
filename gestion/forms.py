@@ -1,9 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
 from django.urls import reverse
-from .models import Agence, Proprietaire, Locataire, Location, Chambre, Immeuble, TypeBien, Paiement, MoyenPaiement
+from django.db.models import Q
+from .models import Agence, Proprietaire, Locataire, Location, Chambre, Immeuble, Paiement, MoyenPaiement, EtatDesLieux
 
 User = get_user_model()
 
@@ -35,6 +36,18 @@ class RegisterForm(UserCreationForm):
         widget=forms.RadioSelect,
         label="Type de compte"
     )
+    rccm = forms.CharField(
+        label="Numéro RCCM (si agence)",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: RC/DLA/2024/A/123'})
+    )
+    nif = forms.CharField(
+        label="Numéro NIF (si agence)",
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: M01234567890N'})
+    )
     terms_accepted = forms.BooleanField(
         required=True,
         # Le label est défini dynamiquement dans __init__ pour éviter la dépendance circulaire.
@@ -58,24 +71,51 @@ class RegisterForm(UserCreationForm):
         self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
         self.fields['password2'].label = "Confirmer le mot de passe"
 
+    def clean(self):
+        cleaned_data = super().clean()
+        user_type = cleaned_data.get('user_type')
+        rccm = cleaned_data.get('rccm')
+        nif = cleaned_data.get('nif')
+
+        # Si l'utilisateur crée un compte agence, au moins un des deux numéros est requis.
+        if user_type == User.AGENCE and not rccm and not nif:
+            self.add_error('rccm', "Pour un compte agence, le numéro RCCM ou NIF est requis.")
+            self.add_error('nif', "Pour un compte agence, le numéro RCCM ou NIF est requis.")
+
+        return cleaned_data
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.telephone = self.cleaned_data['telephone']
         user.user_type = self.cleaned_data['user_type']
+        
         if commit:
             user.save()
+            # Si l'utilisateur est une agence, on crée le profil Agence associé.
+            if user.user_type == User.AGENCE:
+                Agence.objects.create(
+                    user=user,
+                    rccm=self.cleaned_data.get('rccm'),
+                    nif=self.cleaned_data.get('nif')
+                )
         return user
 
 class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['photo_profil', 'first_name', 'last_name', 'email', 'telephone', 'addresse']
+        widgets = {
+            'addresse': forms.Textarea(attrs={'rows': 3}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            # Appliquer la classe 'form-control' à tous les champs sauf les cases à cocher
+            if not isinstance(field.widget, forms.CheckboxInput):
+                cls = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = f'{cls} form-control'.strip()
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
@@ -86,6 +126,23 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         self.fields['new_password1'].label = "Nouveau mot de passe"
         self.fields['new_password2'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
         self.fields['new_password2'].label = "Confirmation du nouveau mot de passe"
+
+class CustomPasswordResetForm(PasswordResetForm):
+    """
+    Formulaire personnalisé pour permettre la réinitialisation par email ou téléphone.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].label = "Email ou numéro de téléphone"
+        self.fields['email'].help_text = "Entrez l'adresse email ou le numéro de téléphone associé à votre compte."
+
+    def get_users(self, email):
+        """
+        Surcharge la méthode pour trouver des utilisateurs par email OU téléphone.
+        Le paramètre 'email' contient la saisie de l'utilisateur.
+        """
+        identifier = email
+        return User._default_manager.filter(Q(email__iexact=identifier) | Q(telephone=identifier), is_active=True)
 
 class MoyenPaiementForm(forms.ModelForm):
     """Formulaire pour ajouter un moyen de paiement."""
@@ -123,12 +180,30 @@ class PaiementForm(forms.ModelForm):
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-control'
 
+class EtatDesLieuxForm(forms.ModelForm):
+    """Formulaire pour créer un état des lieux."""
+    class Meta:
+        model = EtatDesLieux
+        fields = ['type_etat', 'date_etat', 'description', 'document_signe']
+        widgets = {
+            'date_etat': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 5}),
+        }
+        labels = {
+            'type_etat': "Type d'état des lieux",
+            'date_etat': "Date de l'état des lieux",
+            'description': "Description de l'état (murs, sols, équipements, etc.)",
+            'document_signe': "Document signé (PDF, Image)"
+        }
+
 class AgenceProfileForm(forms.ModelForm):
     class Meta:
         model = Agence
-        fields = ['siret']
+        fields = ['logo', 'rccm', 'nif']
         labels = {
-            'siret': "Numéro de SIRET"
+            'logo': "Logo de l'agence",
+            'rccm': "Numéro RCCM",
+            'nif': "Numéro NIF"
         }
 
 class ProprietaireProfileUpdateForm(forms.ModelForm):

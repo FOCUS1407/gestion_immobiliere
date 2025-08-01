@@ -1,72 +1,88 @@
-{% extends "gestion/base.html" %}
-{% load widget_tweaks %}
+{% extends 'gestion/base.html' %}
 
-{% block title %}Inscription{% endblock %}
+{% block title %}Créer un compte - Rent Solution{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-lg-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Créer un compte</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4">Créer un compte</h2>
+                    <form method="post" id="registerForm">
                         {% csrf_token %}
-                        
+
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
                         {% endif %}
 
                         <div class="mb-3">
                             <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
                             {{ form.username }}
-                            {% if form.username.errors %}<div class="invalid-feedback d-block">{{ form.username.errors }}</div>{% endif %}
+                            {{ form.username.errors }}
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
                             {{ form.email }}
-                            {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors }}</div>{% endif %}
+                            {{ form.email.errors }}
                         </div>
 
                         <div class="mb-3">
                             <label for="{{ form.telephone.id_for_label }}" class="form-label">{{ form.telephone.label }}</label>
                             {{ form.telephone }}
-                            {% if form.telephone.errors %}<div class="invalid-feedback d-block">{{ form.telephone.errors }}</div>{% endif %}
+                            {{ form.telephone.errors }}
                         </div>
 
                         <div class="mb-3">
-                            <p class="form-label">{{ form.user_type.label }}</p>
+                            <label class="form-label">{{ form.user_type.label }}</label>
+                            {{ form.user_type.errors }}
+                            <div class="d-flex">
                             {% for radio in form.user_type %}
-                                <div class="form-check form-check-inline">
+                                <div class="form-check me-4">
                                     {{ radio.tag }}
                                     <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
                                 </div>
                             {% endfor %}
-                            {% if form.user_type.errors %}<div class="invalid-feedback d-block">{{ form.user_type.errors }}</div>{% endif %}
+                            </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
-                                {{ form.password1 }}
-                                {% if form.password1.errors %}<div class="invalid-feedback d-block">{{ form.password1.errors }}</div>{% endif %}
+                        <!-- Champs spécifiques à l'agence, cachés par défaut -->
+                        <div id="agence-fields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="{{ form.rccm.id_for_label }}" class="form-label">{{ form.rccm.label }}</label>
+                                {{ form.rccm }}
+                                {{ form.rccm.errors }}
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
-                                {{ form.password2 }}
-                                {% if form.password2.errors %}<div class="invalid-feedback d-block">{{ form.password2.errors }}</div>{% endif %}
+                            <div class="mb-3">
+                                <label for="{{ form.nif.id_for_label }}" class="form-label">{{ form.nif.label }}</label>
+                                {{ form.nif }}
+                                {{ form.nif.errors }}
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">{{ form.password1.label }}</label>
+                            {{ form.password1 }}
+                            {{ form.password1.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">{{ form.password2.label }}</label>
+                            {{ form.password2 }}
+                            {{ form.password2.errors }}
                         </div>
 
                         <div class="form-check mb-4">
-                            {{ form.terms_accepted|add_class:"form-check-input" }}
+                            {{ form.terms_accepted }}
                             <label class="form-check-label" for="{{ form.terms_accepted.id_for_label }}">
-                                {{ form.terms_accepted.label|safe }}
+                                {{ form.terms_accepted.label }}
                             </label>
-                            {% if form.terms_accepted.errors %}<div class="invalid-feedback d-block">{{ form.terms_accepted.errors }}</div>{% endif %}
+                            {{ form.terms_accepted.errors }}
                         </div>
 
                         <div class="d-grid">
@@ -74,7 +90,7 @@
                         </div>
                     </form>
                     <div class="text-center mt-3">
-                        <small>Déjà un compte ? <a href="{% url 'gestion:connexion' %}">Connectez-vous</a></small>
+                        <p>Déjà un compte ? <a href="{% url 'gestion:connexion' %}">Se connecter</a></p>
                     </div>
                 </div>
             </div>
@@ -82,28 +98,5 @@
     </div>
 </div>
 
-<!-- Modal pour les Conditions d'Utilisation -->
-<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="termsModalLabel">Conditions Générales d'Utilisation</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p><strong>Dernière mise à jour :</strong> {% now "d F Y" %}</p>
-        <h4 class="mt-4">Article 1 : Objet</h4>
-        <p>Les présentes CGU ou Conditions Générales d’Utilisation encadrent juridiquement l’utilisation des services du site RentSolution...</p>
-        <h4 class="mt-4">Article 2 : Accès au site</h4>
-        <p>Le site est accessible gratuitement depuis n’importe où par tout utilisateur disposant d’un accès à Internet...</p>
-        <h4 class="mt-4">Article 3 : Collecte des données</h4>
-        <p>Pour la création du compte de l’Utilisateur, la collecte des informations au moment de l’inscription sur le site est nécessaire et obligatoire...</p>
-        <p class="text-muted">[Contenu des conditions d'utilisation à compléter...]</p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">J'ai compris</button>
-      </div>
-    </div>
-  </div>
-</div>
+{% include 'gestion/partials/agence_fields_script.html' %}
 {% endblock %}
