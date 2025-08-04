@@ -95,6 +95,27 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, "Votre compte a été créé avec succès !")
+
+            # --- Envoi de l'email de bienvenue ---
+            try:
+                subject = render_to_string('gestion/email/welcome_user_subject.txt').strip()
+                login_url = request.build_absolute_uri(reverse('gestion:connexion'))
+                
+                email_context = {
+                    'user': user,
+                    'login_url': login_url,
+                }
+                
+                html_body = render_to_string('gestion/email/welcome_user_body.html', email_context)
+
+                send_mail(
+                    subject=subject, message='', from_email=None,
+                    recipient_list=[user.email], html_message=html_body,
+                    fail_silently=False,
+                )
+            except Exception as email_error:
+                messages.warning(request, f"Votre compte a été créé, mais l'envoi de l'email de confirmation a échoué : {email_error}")
+
             if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
             else:
@@ -1096,6 +1117,51 @@ def supprimer_etat_des_lieux(request, pk):
         'chambre': chambre,
     }
     return render(request, 'gestion/etat_des_lieux_confirm_delete.html', context)
+
+@login_required
+def generer_etat_des_lieux_pdf(request, pk):
+    """
+    Génère un document PDF pour un état des lieux.
+    """
+    if HTML is None:
+        return HttpResponse("La bibliothèque WeasyPrint est requise pour générer des PDF. Veuillez l'installer avec 'pip install WeasyPrint'.", status=501)
+
+    etat = get_object_or_404(EtatDesLieux, pk=pk)
+    chambre = etat.location.chambre
+    agence = None
+
+    # Vérification de sécurité : Seule l'agence peut générer le document.
+    is_managing_agence = False
+    if request.user.user_type == 'AG':
+        try:
+            agence = request.user.agence
+            if chambre.immeuble.proprietaire.agence == agence:
+                is_managing_agence = True
+        except (User.agence.RelatedObjectDoesNotExist, Proprietaire.DoesNotExist):
+            pass
+
+    if not is_managing_agence:
+        raise PermissionDenied("Seules les agences peuvent générer ce document.")
+
+    context = {
+        'etat': etat,
+        'location': etat.location,
+        'chambre': chambre,
+        'locataire': etat.location.locataire,
+        'immeuble': chambre.immeuble,
+        'proprietaire': chambre.immeuble.proprietaire,
+        'agence': agence,
+        'date_generation': timezone.now().date(),
+    }
+
+    html_string = render_to_string('gestion/etat_des_lieux_pdf.html', context)
+    pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    locataire_name_safe = "".join([c for c in str(etat.location.locataire) if c.isalpha() or c.isdigit() or c.isspace()]).rstrip()
+    filename = f"etat_des_lieux_{etat.type_etat}_{locataire_name_safe.replace(' ', '_')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 @login_required
 def liberer_chambre(request, pk):

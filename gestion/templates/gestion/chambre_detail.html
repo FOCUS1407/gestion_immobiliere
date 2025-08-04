@@ -147,6 +147,7 @@
                                             {% if request.user.user_type == 'AG' %}
                                                 <a href="{% url 'gestion:modifier_etat_des_lieux' etat.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="fas fa-edit"></i></a>
                                                 <a href="{% url 'gestion:supprimer_etat_des_lieux' etat.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fas fa-trash"></i></a>
+                                                <a href="{% url 'gestion:generer_etat_des_lieux_pdf' etat.pk %}" class="btn btn-sm btn-outline-info" title="Imprimer l'état des lieux" target="_blank"><i class="fas fa-print"></i></a>
                                             {% endif %}
                                         </div>
                                     </div>

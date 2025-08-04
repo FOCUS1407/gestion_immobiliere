@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
+from django.utils import timezone
 from django.urls import reverse
 from django.db.models import Q
 from .models import Agence, Proprietaire, Locataire, Location, Chambre, Immeuble, Paiement, MoyenPaiement, EtatDesLieux
@@ -31,10 +32,11 @@ class RegisterForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     user_type = forms.ChoiceField(
-        choices=User.USER_TYPE_CHOICES,
+        # On redéfinit les choix pour l'inscription. Le type 'Propriétaire' seul ne peut être créé que par une agence.
+        choices=[('AG_PROP', "Je suis un propriétaire et je gère mes biens"), ('AG_ONLY', "Je suis une agence et je gère les biens d'autres propriétaires")],
         required=True,
         widget=forms.RadioSelect,
-        label="Type de compte"
+        label="Quel type de compte souhaitez-vous créer ?"
     )
     rccm = forms.CharField(
         label="Numéro RCCM (si agence)",
@@ -56,7 +58,7 @@ class RegisterForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ('username', 'email', 'telephone', 'user_type')
+        fields = ('username', 'email', 'telephone')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,14 +75,13 @@ class RegisterForm(UserCreationForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        user_type = cleaned_data.get('user_type')
+        # La validation RCCM/NIF s'applique dans les deux cas, car l'utilisateur est une entité de gestion.
         rccm = cleaned_data.get('rccm')
         nif = cleaned_data.get('nif')
 
-        # Si l'utilisateur crée un compte agence, au moins un des deux numéros est requis.
-        if user_type == User.AGENCE and not rccm and not nif:
-            self.add_error('rccm', "Pour un compte agence, le numéro RCCM ou NIF est requis.")
-            self.add_error('nif', "Pour un compte agence, le numéro RCCM ou NIF est requis.")
+        if not rccm and not nif:
+            self.add_error('rccm', "Le numéro RCCM ou NIF est requis pour un compte de gestion.")
+            self.add_error('nif', "Le numéro RCCM ou NIF est requis pour un compte de gestion.")
 
         return cleaned_data
 
@@ -88,17 +89,18 @@ class RegisterForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.telephone = self.cleaned_data['telephone']
-        user.user_type = self.cleaned_data['user_type']
+        # Dans les deux cas, l'utilisateur est de type 'AGENCE' pour avoir accès aux outils de gestion.
+        user.user_type = User.AGENCE
         
         if commit:
             user.save()
-            # Si l'utilisateur est une agence, on crée le profil Agence associé.
-            if user.user_type == User.AGENCE:
-                Agence.objects.create(
-                    user=user,
-                    rccm=self.cleaned_data.get('rccm'),
-                    nif=self.cleaned_data.get('nif')
-                )
+            # On crée le profil Agence dans tous les cas.
+            agence_profil = Agence.objects.create(user=user, rccm=self.cleaned_data.get('rccm'), nif=self.cleaned_data.get('nif'))
+
+            # Si l'utilisateur est un propriétaire en autogestion, on crée aussi un profil Proprietaire lié à sa propre agence.
+            if self.cleaned_data.get('user_type') == 'AG_PROP':
+                Proprietaire.objects.create(user=user, agence=agence_profil, taux_commission=0, date_debut_contrat=timezone.now(), duree_contrat=0)
+
         return user
 
 class UserUpdateForm(forms.ModelForm):

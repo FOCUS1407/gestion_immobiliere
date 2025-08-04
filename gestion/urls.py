@@ -92,6 +92,7 @@ urlpatterns = [
     # Gestion des États des Lieux
     path('etats-des-lieux/<int:pk>/modifier/', views.modifier_etat_des_lieux, name='modifier_etat_des_lieux'),
     path('etats-des-lieux/<int:pk>/supprimer/', views.supprimer_etat_des_lieux, name='supprimer_etat_des_lieux'),
+    path('etats-des-lieux/<int:pk>/pdf/', views.generer_etat_des_lieux_pdf, name='generer_etat_des_lieux_pdf'),
 
     # Paramètres et Exports
     path('parametres/moyens-paiement/', views.gerer_moyens_paiement, name='gerer_moyens_paiement'),

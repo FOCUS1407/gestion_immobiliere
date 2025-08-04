@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <title>Bienvenue sur RentSolution</title>
+</head>
+<body>
+    <p>Bonjour {{ user.get_full_name|default:user.username }},</p>
+    <p>Nous sommes ravis de vous accueillir sur RentSolution ! Votre compte a été créé avec succès.</p>
+    <p>Vous pouvez dès maintenant vous connecter et commencer à utiliser nos outils pour simplifier votre gestion immobilière.</p>
+    <p><a href="{{ login_url }}">Accéder à mon compte</a></p>
+    <br>
+    <p>L'équipe RentSolution</p>
+</body>
+</html>

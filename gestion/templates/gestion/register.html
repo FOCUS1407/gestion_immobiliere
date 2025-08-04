@@ -52,7 +52,7 @@
                         </div>
 
                         <!-- Champs spécifiques à l'agence, cachés par défaut -->
-                        <div id="agence-fields" style="display: none;">
+                        <div id="agence-fields">
                             <div class="mb-3">
                                 <label for="{{ form.rccm.id_for_label }}" class="form-label">{{ form.rccm.label }}</label>
                                 {{ form.rccm }}
@@ -98,5 +98,4 @@
     </div>
 </div>
 
-{% include 'gestion/partials/agence_fields_script.html' %}
 {% endblock %}

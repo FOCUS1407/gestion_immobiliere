@@ -116,11 +116,16 @@
                             <!-- Contract Info Pane (Read-only for owner) -->
                             {% if proprietaire_profile %}
                             <div class="tab-pane fade" id="contrat-pane" role="tabpanel" aria-labelledby="contrat-tab" tabindex="0">
-                                <h5 class="mb-3">Détails de votre contrat avec l'agence</h5>
-                                <p><strong>Taux de commission :</strong> {{ proprietaire_profile.taux_commission }}%</p>
-                                <p><strong>Date de début du contrat :</strong> {{ proprietaire_profile.date_debut_contrat|date:"d F Y" }}</p>
-                                <p><strong>Durée du contrat :</strong> {{ proprietaire_profile.duree_contrat }} mois</p>
-                                <p class="text-muted small mt-3">Pour toute modification de votre contrat, veuillez contacter directement votre agence.</p>
+                                {% if proprietaire_profile.agence.user == user %}
+                                    <h5 class="mb-3">Profil Propriétaire</h5>
+                                    <p>Vous gérez vous-même vos biens. Vous pouvez ajouter et gérer vos immeubles depuis votre tableau de bord.</p>
+                                {% else %}
+                                    <h5 class="mb-3">Détails de votre contrat avec l'agence</h5>
+                                    <p><strong>Taux de commission :</strong> {{ proprietaire_profile.taux_commission }}%</p>
+                                    <p><strong>Date de début du contrat :</strong> {{ proprietaire_profile.date_debut_contrat|date:"d F Y" }}</p>
+                                    <p><strong>Durée du contrat :</strong> {{ proprietaire_profile.duree_contrat }} mois</p>
+                                    <p class="text-muted small mt-3">Pour toute modification de votre contrat, veuillez contacter directement votre agence.</p>
+                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
