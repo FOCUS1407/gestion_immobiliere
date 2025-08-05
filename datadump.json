@@ -1,0 +1,523 @@
+[
+  {
+    "model": "admin.logentry",
+    "pk": 1,
+    "fields": {
+      "action_time": "2025-07-25T00:21:59.191Z",
+      "user": 1,
+      "content_type": 12,
+      "object_id": "1",
+      "object_repr": "RÚsidentiel",
+      "action_flag": 1,
+      "change_message": "[{\"added\": {}}]"
+    }
+  },
+  {
+    "model": "admin.logentry",
+    "pk": 2,
+    "fields": {
+      "action_time": "2025-07-25T00:22:13.697Z",
+      "user": 1,
+      "content_type": 12,
+      "object_id": "2",
+      "object_repr": "Commercial",
+      "action_flag": 1,
+      "change_message": "[{\"added\": {}}]"
+    }
+  },
+  {
+    "model": "admin.logentry",
+    "pk": 3,
+    "fields": {
+      "action_time": "2025-07-30T16:54:04.728Z",
+      "user": 1,
+      "content_type": 6,
+      "object_id": "7",
+      "object_repr": "David",
+      "action_flag": 3,
+      "change_message": ""
+    }
+  },
+  {
+    "model": "admin.logentry",
+    "pk": 4,
+    "fields": {
+      "action_time": "2025-07-30T16:54:04.894Z",
+      "user": 1,
+      "content_type": 6,
+      "object_id": "5",
+      "object_repr": "coco",
+      "action_flag": 3,
+      "change_message": ""
+    }
+  },
+  {
+    "model": "admin.logentry",
+    "pk": 5,
+    "fields": {
+      "action_time": "2025-08-01T17:42:30.718Z",
+      "user": 1,
+      "content_type": 7,
+      "object_id": "1",
+      "object_repr": "focus camille (Agence)",
+      "action_flag": 2,
+      "change_message": "[{\"changed\": {\"fields\": [\"Num\\u00e9ro RCCM\", \"Num\\u00e9ro NIF\"]}}]"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "tmsrnqzffbmhklc0fqw027yumarkstix",
+    "fields": {
+      "session_data": ".eJxVjDsOwjAQBe_iGlnxL7Yp6TmDtetd4wBypDipEHeHSCmgfTPzXiLBtta0dV7SROIstDj9bgj5wW0HdId2m2We27pMKHdFHrTL60z8vBzu30GFXr-154iOB6u0KoOhULSDDIW4ICmKWKJ3PFrvAyIbhmAKayKIcTQKoxXvDwzBOQc:1uj1Rx:WbRg_4on17zXIinHQsQ6IqUgT5UOQTx141aQds7nxf8",
+      "expire_date": "2025-08-18T20:06:25.586Z"
+    }
+  },
+  {
+    "model": "gestion.customuser",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$390000$DUWqvHxnTaZgtPNl0ocpDK$19qhpZBLT5aL+7kq6b5fYOvcD1pTd/jKpN1DGZAyGnQ=",
+      "last_login": "2025-08-01T17:39:27.808Z",
+      "is_superuser": true,
+      "username": "focus",
+      "first_name": "komlan",
+      "last_name": "TOTO",
+      "email": "focus@gmail.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-07-24T01:22:01.854Z",
+      "user_type": "",
+      "telephone": "98677554",
+      "addresse": "esqsrdtfgh",
+      "photo_profil": "",
+      "must_change_password": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "gestion.customuser",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$DKMwcZ1vb5oyFNqdE6olcR$BZO7Td6dKDaiPbV4xq/REHPL8rVaiKHLx/s1174+iQI=",
+      "last_login": "2025-08-04T19:37:26.038Z",
+      "is_superuser": false,
+      "username": "camille",
+      "first_name": "focus",
+      "last_name": "camille",
+      "email": "edohcamille7@gmail.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-07-24T01:51:38.289Z",
+      "user_type": "AG",
+      "telephone": "98677554",
+      "addresse": "LomÚ, AmadahomÚ",
+      "photo_profil": "profile_pics/user_2/PHOTO.jpg",
+      "must_change_password": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "gestion.customuser",
+    "pk": 10,
+    "fields": {
+      "password": "pbkdf2_sha256$390000$SmEuMVJ83kX7qeBIqFJsgm$dpweGXDlp997+urPtf23Lkj5HARw4aTt8PDWpLcg0iM=",
+      "last_login": "2025-08-02T12:34:54.873Z",
+      "is_superuser": false,
+      "username": "elom.messanh",
+      "first_name": "Elom",
+      "last_name": "Messanh",
+      "email": "koffiedoh14@gmail.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-07-30T18:23:22.216Z",
+      "user_type": "PR",
+      "telephone": "96583800",
+      "addresse": "LomÚ, AmadahomÚ",
+      "photo_profil": "",
+      "must_change_password": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "gestion.customuser",
+    "pk": 11,
+    "fields": {
+      "password": "pbkdf2_sha256$390000$2t9vA1FKqf9GPjlBlwKB41$LZd8P7PLA5Y9YULzjQksgBq+Es9L85EiE/fPq0/Sf8M=",
+      "last_login": "2025-08-02T12:36:51.227Z",
+      "is_superuser": false,
+      "username": "chantal.ewan",
+      "first_name": "Chantal",
+      "last_name": "EWAN",
+      "email": "chantalewan930@gmail.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-07-30T19:51:04.126Z",
+      "user_type": "PR",
+      "telephone": "97478652",
+      "addresse": "LomÚ- Agbavi",
+      "photo_profil": "",
+      "must_change_password": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "gestion.customuser",
+    "pk": 12,
+    "fields": {
+      "password": "pbkdf2_sha256$390000$68xqmIuOrWPJkO6CEZNLi3$UpVnFYPmxbgHdSrVajO7EJPqfv3k+dGbjOQvT9cEnH0=",
+      "last_login": "2025-08-02T14:11:26.174Z",
+      "is_superuser": false,
+      "username": "baba",
+      "first_name": "",
+      "last_name": "",
+      "email": "messancamille1995@gmail.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-08-02T13:32:57.940Z",
+      "user_type": "AG",
+      "telephone": "90446526",
+      "addresse": "",
+      "photo_profil": "",
+      "must_change_password": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "gestion.agence",
+    "pk": 1,
+    "fields": {
+      "user": 2,
+      "logo": "agence_logos/agence_1/imagem.jpg",
+      "rccm": "RCCM 12345",
+      "nif": "NIF 0012345678",
+      "date_creation": "2025-07-24"
+    }
+  },
+  {
+    "model": "gestion.agence",
+    "pk": 2,
+    "fields": {
+      "user": 12,
+      "logo": "",
+      "rccm": "RCCM 67890",
+      "nif": "NIF 0016495678",
+      "date_creation": "2025-08-02"
+    }
+  },
+  {
+    "model": "gestion.proprietaire",
+    "pk": 6,
+    "fields": {
+      "user": 10,
+      "agence": 1,
+      "taux_commission": "20.00",
+      "date_debut_contrat": "2025-07-30",
+      "duree_contrat": 5
+    }
+  },
+  {
+    "model": "gestion.proprietaire",
+    "pk": 7,
+    "fields": {
+      "user": 11,
+      "agence": 1,
+      "taux_commission": "40.00",
+      "date_debut_contrat": "2025-07-30",
+      "duree_contrat": 24
+    }
+  },
+  {
+    "model": "gestion.proprietaire",
+    "pk": 8,
+    "fields": {
+      "user": 12,
+      "agence": 2,
+      "taux_commission": "0.00",
+      "date_debut_contrat": "2025-08-02",
+      "duree_contrat": 0
+    }
+  },
+  {
+    "model": "gestion.typebien",
+    "pk": 1,
+    "fields": {
+      "designation": "RES"
+    }
+  },
+  {
+    "model": "gestion.typebien",
+    "pk": 2,
+    "fields": {
+      "designation": "COM"
+    }
+  },
+  {
+    "model": "gestion.immeuble",
+    "pk": 7,
+    "fields": {
+      "proprietaire": 6,
+      "type_bien": 1,
+      "addresse": "lome",
+      "superficie": "120.00",
+      "nombre_chambres": 5,
+      "date_ajout": "2025-07-30"
+    }
+  },
+  {
+    "model": "gestion.immeuble",
+    "pk": 8,
+    "fields": {
+      "proprietaire": 7,
+      "type_bien": 2,
+      "addresse": "Tokoin",
+      "superficie": "150.00",
+      "nombre_chambres": 5,
+      "date_ajout": "2025-07-30"
+    }
+  },
+  {
+    "model": "gestion.locataire",
+    "pk": 1,
+    "fields": {
+      "agence": 1,
+      "nom": "KOSSI",
+      "prenom": "kodjo",
+      "telephone": "97342623",
+      "raison_sociale": "SARL",
+      "email": "kodjo@gmail.com",
+      "caution": "80000.00",
+      "date_inscription": "2025-07-24"
+    }
+  },
+  {
+    "model": "gestion.locataire",
+    "pk": 2,
+    "fields": {
+      "agence": 1,
+      "nom": "MESANH",
+      "prenom": "Dodji",
+      "telephone": "97342623",
+      "raison_sociale": "Comptable",
+      "email": "dodji@gmail.com",
+      "caution": "100000.00",
+      "date_inscription": "2025-07-26"
+    }
+  },
+  {
+    "model": "gestion.locataire",
+    "pk": 3,
+    "fields": {
+      "agence": 1,
+      "nom": "SAMUEL",
+      "prenom": "Kokou",
+      "telephone": "98786534",
+      "raison_sociale": "Agronome",
+      "email": "kokou@gmail.com",
+      "caution": "80000.00",
+      "date_inscription": "2025-07-26"
+    }
+  },
+  {
+    "model": "gestion.moyenpaiement",
+    "pk": 1,
+    "fields": {
+      "designation": "MOB"
+    }
+  },
+  {
+    "model": "gestion.moyenpaiement",
+    "pk": 2,
+    "fields": {
+      "designation": "VIR"
+    }
+  },
+  {
+    "model": "gestion.moyenpaiement",
+    "pk": 3,
+    "fields": {
+      "designation": "ESP"
+    }
+  },
+  {
+    "model": "gestion.chambre",
+    "pk": 8,
+    "fields": {
+      "immeuble": 7,
+      "designation": "Chambre salom",
+      "superficie": "10.00",
+      "prix_loyer": "15000.00",
+      "locataire": 1,
+      "date_mise_en_location": "2025-07-30"
+    }
+  },
+  {
+    "model": "gestion.chambre",
+    "pk": 9,
+    "fields": {
+      "immeuble": 7,
+      "designation": "une piÚce",
+      "superficie": "9.00",
+      "prix_loyer": "8000.00",
+      "locataire": 3,
+      "date_mise_en_location": "2025-07-30"
+    }
+  },
+  {
+    "model": "gestion.chambre",
+    "pk": 10,
+    "fields": {
+      "immeuble": 8,
+      "designation": "Chambre salom",
+      "superficie": "10.00",
+      "prix_loyer": "15000.00",
+      "locataire": 2,
+      "date_mise_en_location": "2025-07-30"
+    }
+  },
+  {
+    "model": "gestion.chambre",
+    "pk": 11,
+    "fields": {
+      "immeuble": 8,
+      "designation": "Chambre salom",
+      "superficie": "12.00",
+      "prix_loyer": "20000.00",
+      "locataire": null,
+      "date_mise_en_location": "2025-07-31"
+    }
+  },
+  {
+    "model": "gestion.chambre",
+    "pk": 12,
+    "fields": {
+      "immeuble": 8,
+      "designation": "Chambre salom",
+      "superficie": "10.00",
+      "prix_loyer": "10000.00",
+      "locataire": null,
+      "date_mise_en_location": "2025-06-30"
+    }
+  },
+  {
+    "model": "gestion.location",
+    "pk": 5,
+    "fields": {
+      "chambre": 8,
+      "locataire": 1,
+      "date_entree": "2025-07-30",
+      "date_sortie": null,
+      "moyen_paiement": 1
+    }
+  },
+  {
+    "model": "gestion.location",
+    "pk": 6,
+    "fields": {
+      "chambre": 10,
+      "locataire": 2,
+      "date_entree": "2025-07-30",
+      "date_sortie": null,
+      "moyen_paiement": 2
+    }
+  },
+  {
+    "model": "gestion.location",
+    "pk": 7,
+    "fields": {
+      "chambre": 9,
+      "locataire": 3,
+      "date_entree": "2025-07-31",
+      "date_sortie": null,
+      "moyen_paiement": 2
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 6,
+    "fields": {
+      "location": 5,
+      "montant": "15000.00",
+      "date_paiement": "2025-07-30",
+      "mois_couvert": "July 2025",
+      "moyen_paiement": 1,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 7,
+    "fields": {
+      "location": 6,
+      "montant": "15000.00",
+      "date_paiement": "2025-07-30",
+      "mois_couvert": "July 2025",
+      "moyen_paiement": 2,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 8,
+    "fields": {
+      "location": 5,
+      "montant": "15000.00",
+      "date_paiement": "2025-07-31",
+      "mois_couvert": "Juillet 2025",
+      "moyen_paiement": 3,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 9,
+    "fields": {
+      "location": 6,
+      "montant": "15000.00",
+      "date_paiement": "2025-07-31",
+      "mois_couvert": "Juillet 2025",
+      "moyen_paiement": 1,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 10,
+    "fields": {
+      "location": 6,
+      "montant": "15000.00",
+      "date_paiement": "2025-07-31",
+      "mois_couvert": "juillet 2025",
+      "moyen_paiement": 1,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.paiement",
+    "pk": 11,
+    "fields": {
+      "location": 6,
+      "montant": "15000.00",
+      "date_paiement": "2025-08-01",
+      "mois_couvert": "AoÒ╗t 2025",
+      "moyen_paiement": 1,
+      "est_valide": true
+    }
+  },
+  {
+    "model": "gestion.etatdeslieux",
+    "pk": 1,
+    "fields": {
+      "location": 5,
+      "type_etat": "ENT",
+      "date_etat": "2025-08-01",
+      "description": "tout est bon",
+      "document_signe": "",
+      "created_at": "2025-08-01T22:58:15.085Z"
+    }
+  }
+]

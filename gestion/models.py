@@ -3,6 +3,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from io import BytesIO
+from django.core.files.base import ContentFile
+from PIL import Image
+
 
 def agence_logo_path(instance, filename):
     """Génère un chemin de fichier unique pour le logo de l'agence."""
@@ -27,7 +31,7 @@ class CustomUser(AbstractUser):
     user_type = models.CharField(max_length=2, choices=USER_TYPE_CHOICES)
     telephone = models.CharField(max_length=20)
     addresse = models.TextField()
-    photo_profil = models.ImageField(upload_to=user_profile_pic_path, null=True, blank=True, verbose_name="Photo de profil")
+    photo_profil = models.ImageField(upload_to=user_profile_pic_path, default='profile_pics/default_avatar.jpg', verbose_name="Photo de profil")
     must_change_password = models.BooleanField(default=False, verbose_name="Doit changer le mot de passe")
 
     class Meta:
@@ -35,6 +39,32 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+    def save(self, *args, **kwargs):
+        # Vérifier si une nouvelle photo de profil a été téléversée
+        if self.photo_profil and hasattr(self.photo_profil.file, 'content_type'):
+            # Ouvrir l'image en mémoire
+            img = Image.open(self.photo_profil)
+
+            # Définir la taille maximale (ex: 300x300 pixels)
+            max_size = (300, 300)
+            img.thumbnail(max_size)
+
+            # Si l'image a un canal alpha (transparence), la convertir en RGB
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+
+            # Créer un buffer en mémoire pour la nouvelle image
+            output = BytesIO()
+            # Sauvegarder l'image optimisée dans le buffer au format JPEG avec une qualité de 85%
+            img.save(output, format='JPEG', quality=85)
+            output.seek(0) # Rembobiner le buffer
+
+            # Remplacer le fichier original par le fichier optimisé
+            self.photo_profil = ContentFile(output.read(), name=self.photo_profil.name)
+
+        # Appeler la méthode save() originale
+        super().save(*args, **kwargs)
 
 class Agence(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -43,9 +73,31 @@ class Agence(models.Model):
     nif = models.CharField("Numéro NIF", max_length=50, unique=True, null=True, blank=True)
     date_creation = models.DateField(auto_now_add=True)
 
-
     def __str__(self):
         return f"{self.user.get_full_name()} (Agence)"
+
+    def save(self, *args, **kwargs):
+        # Logique similaire pour le logo de l'agence
+        if self.logo and hasattr(self.logo.file, 'content_type'):
+            img = Image.open(self.logo)
+
+            # Taille maximale pour un logo (ex: 400x400)
+            max_size = (400, 400)
+            img.thumbnail(max_size)
+
+            # Si le logo a de la transparence, on peut le sauvegarder en PNG
+            output = BytesIO()
+            if img.mode == 'RGBA':
+                img.save(output, format='PNG', optimize=True)
+            else:
+                img = img.convert('RGB')
+                img.save(output, format='JPEG', quality=90)
+            
+            output.seek(0)
+            self.logo = ContentFile(output.read(), name=self.logo.name)
+
+        super().save(*args, **kwargs)
+
 
 class Proprietaire(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

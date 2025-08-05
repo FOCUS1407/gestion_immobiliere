@@ -19,6 +19,8 @@
     <link rel="icon" href="{% static 'gestion/img/favicon.ico' %}" type="image/x-icon">
     
 </head>
+
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-custom shadow-sm sticky-top">
         <div class="container">
@@ -29,64 +31,55 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            {% if user.user_type == 'AG' %}
-                                <a class="nav-link" href="{% url 'gestion:tableau_de_bord_agence' %}">Tableau de Bord</a>
-                            {% else %}
-                                <a class="nav-link" href="{% url 'gestion:tableau_de_bord_proprietaire' %}">Tableau de Bord</a>
-                            {% endif %}
-                        </li>
-                        {% if user.user_type == 'AG' %}
+                         <!-- Menu déroulant pour l'utilisateur connecté -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-bell"></i>
-                                {% if unread_notifications_count > 0 %}
-                                    <span class="badge rounded-pill bg-danger" style="position: relative; top: -10px; left: -5px;">{{ unread_notifications_count }}</span>
-                                {% endif %}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="min-width: 300px;">
-                                <li class="px-3 py-2 fw-bold">Notifications</li>
-                                <li><hr class="dropdown-divider"></li>
-                                {% for notif in unread_notifications %}
-                                    <li><a class="dropdown-item text-wrap" href="{{ notif.link|default:'#' }}">{{ notif.message|truncatechars:60 }}</a></li>
-                                {% empty %}
-                                    <li><p class="dropdown-item text-muted text-center mb-0">Aucune nouvelle notification</p></li>
-                                {% endfor %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-center text-primary" href="{% url 'gestion:notification_list' %}">Voir toutes les notifications</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                
+                               <!-- Affichage de la photo de profil -->
                                 {% if user.photo_profil %}
-                                    <img src="{{ user.photo_profil.url }}" alt="Profil" class="rounded-circle" width="30" height="30" style="object-fit: cover;">
+                                    <img src="{{ user.photo_profil.url }}" alt="Photo de profil" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
                                 {% else %}
-                                    <i class="fas fa-user-circle fa-lg"></i>
+                                    <!-- Icône par défaut si aucune photo de profil n'est définie -->
+                                    <i class="fas fa-user-circle fa-2x me-2 text-secondary"></i>
                                 {% endif %}
-                                <span class="ms-2">{{ user.username }}</span>
+                                {{ user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="{% url 'gestion:profil' %}"><i class="fas fa-user-edit me-2"></i>Mon Profil</a></li>
-                                <li><a class="dropdown-item" href="{% url 'gestion:changer_mdp' %}"><i class="fas fa-key me-2"></i>Changer le mot de passe</a></li>
+                                <!-- Affichage du logo de l'agence (uniquement pour les agences) -->
+                                {% if user.user_type == 'AG' and user.agence.logo %}
+                                    <li>
+                                        <div class="px-3 py-2 text-center">
+                                            <img src="{{ user.agence.logo.url }}" alt="Logo de l'agence" style="max-width: 100px; max-height: 40px;">
+                                         </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+
+                                <!-- Liens du menu -->
+                                {% if user.user_type == 'AG' %}
+                                    <li><a class="dropdown-item" href="{% url 'gestion:tableau_de_bord_agence' %}">Tableau de bord</a></li>
+                                {% else %}
+                                    <li><a class="dropdown-item" href="{% url 'gestion:tableau_de_bord_proprietaire' %}">Tableau de bord</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'gestion:profil' %}">Mon Profil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'gestion:changer_mdp' %}">Changer le mot de passe</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form action="{% url 'gestion:logout' %}" method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="dropdown-item text-danger">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                                        </button>
-                                    </form>
-                                </li>
+                                <li><a class="dropdown-item" href="{% url 'gestion:logout' %}">Déconnexion</a></li>
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'gestion:connexion' %}">Connexion</a></li>
-                        <li class="nav-item"><a class="nav-link btn btn-primary text-white btn-sm px-3" href="{% url 'gestion:register' %}">Inscription</a></li>
+                        <!-- Liens pour les utilisateurs non connectés -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'gestion:connexion' %}">Connexion</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-primary text-white" href="{% url 'gestion:register' %}">Inscription</a>
+                        </li>
                     {% endif %}
                 </ul>
+
             </div>
         </div>
     </nav>
