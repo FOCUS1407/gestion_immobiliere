@@ -10,9 +10,11 @@
         <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary me-2">
             <i class="fas fa-arrow-left me-2"></i>Retour
         </a>
+        <!-- Exporter les paiements en CSV 
         <a href="{% url 'gestion:exporter_paiements_csv' %}" class="btn btn-outline-secondary me-2">
             <i class="fas fa-file-csv me-2"></i>Exporter (CSV)
         </a>
+         -->
         <a href="{% url 'gestion:generer_rapport_financier_pdf' %}?proprietaire_id={{ selected_owner_id|default_if_none:'' }}&mois={{ selected_month_str }}" class="btn btn-danger" target="_blank">
             <i class="fas fa-file-pdf me-2"></i>Imprimer (PDF)
         </a>

@@ -149,10 +149,12 @@ class MoyenPaiement(models.Model):
     MOBILE = 'MOB'
     ESPECES = 'ESP'
     VIREMENT = 'VIR'
+    DEPOT_ESPECES = 'DEP'
     TYPE_CHOICES = [
         (MOBILE, 'Mobile Money'),
         (ESPECES, 'Espèces'),
         (VIREMENT, 'Virement Bancaire'),
+        (DEPOT_ESPECES, "Dépôt d'espèces en banque"),
     ]
     designation = models.CharField(max_length=3, choices=TYPE_CHOICES, unique=True)
 
@@ -187,6 +189,7 @@ class Paiement(models.Model):
     mois_couvert = models.CharField(max_length=20)  # Format "MM-YYYY"
     moyen_paiement = models.ForeignKey(MoyenPaiement, on_delete=models.PROTECT)
     est_valide = models.BooleanField(default=False)
+    preuve_paiement = models.FileField(upload_to='preuves_paiement/', null=True, blank=True, verbose_name="Preuve de Paiement")
 
     class Meta:
         unique_together = ('location', 'mois_couvert')

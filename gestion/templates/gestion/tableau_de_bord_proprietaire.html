@@ -1,42 +1,140 @@
 {% extends "gestion/base.html" %}
+{% load humanize %}
 
-{% block title %}Mon Tableau de Bord{% endblock %}
+{% block title %}Tableau de bord Propriétaire{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h1 class="mb-4">Tableau de Bord Propriétaire</h1>
-    <p class="lead">Bienvenue, {{ user.get_full_name|default:user.username }} !</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Tableau de bord</h1>
+        <span class="text-muted">Propriétaire : {{ user.get_full_name }}</span>
+    </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Résumé Financier du Mois -->
+    <div class="row">
+        <div class="col-12">
+            <h4 class="mb-3">Résumé pour {{ current_month_display }}</h4>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-muted">Total Attendu</h5>
+                    <p class="card-text fs-4 fw-bold">{{ total_attendu_mois|floatformat:0|intcomma }} Frcfa</p>
+                </div>
             </div>
-        {% endfor %}
-    {% endif %}
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-success">Total Payé</h5>
+                    <p class="card-text fs-4 fw-bold text-success">{{ total_paye_mois|floatformat:0|intcomma }} Frcfa</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Total Impayé</h5>
+                    <p class="card-text fs-4 fw-bold text-danger">{{ total_impaye_mois|floatformat:0|intcomma }} Frcfa</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Commission Agence</h5>
+                    <p class="card-text fs-4 fw-bold text-info">{{ commission_mois|floatformat:0|intcomma }} Frcfa</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <div class="card shadow-sm">
+    <!-- Liste des Immeubles -->
+    <div class="card shadow-sm mt-3">
         <div class="card-header">
             <h5 class="mb-0">Mes Immeubles ({{ nombre_immeubles }})</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if immeubles %}
-                <div class="list-group">
-                    {% for immeuble in immeubles %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="mb-1">{{ immeuble.addresse }}</h5>
-                                    <p class="mb-1 text-muted">Type : {{ immeuble.type_bien }} | Unités : {{ immeuble.chambres.count }} / {{ immeuble.nombre_chambres }}</p>
-                                </div>
-                                <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-primary">Voir les détails</a>
-                            </div>
-                        </div>
-                    {% endfor %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Adresse</th>
+                                <th>Type de bien</th>
+                                <th>Unités</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for immeuble in immeubles %}
+                            <tr>
+                                <td>{{ immeuble.addresse|linebreaksbr }}</td>
+                                <td>{{ immeuble.type_bien }}</td>
+                                <td>{{ immeuble.nombre_chambres }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-sm btn-outline-primary">Voir les détails</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             {% else %}
-                <p class="text-muted">Vous n'avez aucun immeuble enregistré pour le moment. Veuillez contacter votre agence.</p>
+                <div class="text-center text-muted p-4">
+                    <p>Vous n'avez aucun immeuble enregistré pour le moment.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Rapport Détaillé Mensuel -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Détail des loyers pour {{ current_month_display }}</h5>
+            <a href="{% url 'gestion:generer_rapport_proprietaire_pdf' %}" class="btn btn-sm btn-outline-danger">
+                <i class="fas fa-file-pdf me-1"></i> Télécharger en PDF
+            </a>
+        </div>
+        <div class="card-body p-0">
+            {% if monthly_rent_details %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Locataire</th>
+                                <th>Unité</th>
+                                <th>Loyer à Payer</th>
+                                <th>Loyer Payé</th>
+                                <th>Reste à Payer</th>
+                                <th>Date de Paiement</th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detail in monthly_rent_details %}
+                            <tr>
+                                <td>{{ detail.locataire }}</td>
+                                <td>{{ detail.chambre.designation }}</td>
+                                <td>{{ detail.loyer_a_payer|floatformat:0|intcomma }} Frcfa</td>
+                                <td>{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
+                                <td>
+                                    {% if detail.reste_a_payer > 0 %}
+                                        <span class="text-danger fw-bold">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</span>
+                                    {% else %}
+                                        <span>{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ detail.date_paiement|date:"d/m/Y"|default:"--" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center text-muted p-4">
+                    <p>Aucun détail de loyer à afficher pour ce mois.</p>
+                </div>
             {% endif %}
         </div>
     </div>

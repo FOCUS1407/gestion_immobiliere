@@ -2,130 +2,61 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Quittance de Loyer</title>
+    <title>Quittance de Loyer - {{ paiement.mois_couvert }}</title>
+    <link rel="stylesheet" href="/static/gestion/css/pdf_styles.css">
     <style>
-        @page {
-            size: A4;
-            margin: 1.5cm;
-        }
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 11pt;
-            color: #333;
-        }
-        h1 {
-            text-align: center;
-            color: #000;
-            text-transform: uppercase;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 40px;
         }
-        .header, .footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-        }
-        .header {
-            top: -1cm;
-            text-align: right;
-            font-size: 9pt;
-            color: #888;
-        }
-        .footer {
-            bottom: -1cm;
-            text-align: center;
-            font-size: 9pt;
-            color: #888;
-        }
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        .details-table td {
-            padding: 10px;
-            vertical-align: top;
-        }
-        .details-table .label {
-            font-weight: bold;
-            width: 30%;
-        }
-        .section {
-            margin-bottom: 30px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .section h2 {
-            margin-top: 0;
-            font-size: 14pt;
-            color: #555;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-        }
-        .signature-section {
-            margin-top: 60px;
-            text-align: right;
-        }
-        .signature-section .signature-line {
-            border-bottom: 1px solid #333;
-            width: 250px;
-            margin-top: 60px;
-            display: inline-block;
-        }
+        .agence-info { width: 50%; }
+        .locataire-info { width: 50%; text-align: right; }
+        .quittance-title { text-align: center; margin-bottom: 40px; }
+        .footer { margin-top: 60px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        Quittance de Loyer - {{ agence.user.get_full_name }}
+    <div class="header-container">
+        <div class="agence-info">
+            {% if agence.logo %}
+                <img src="{{ agence.logo.url }}" alt="Logo Agence" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">
+            {% endif %}
+            <h4>{{ agence.user.get_full_name }}</h4>
+            <p>{{ agence.user.addresse|linebreaksbr }}</p>
+            <p>Tél: {{ agence.user.telephone }}</p>
+            <p>Email: {{ agence.user.email }}</p>
+        </div>
+        <div class="locataire-info">
+            <h4>Destinataire</h4>
+            <p><strong>{{ locataire }}</strong></p>
+            <p>{{ chambre.immeuble.addresse|linebreaksbr }}</p>
+            <p>Unité: {{ chambre.designation }}</p>
+        </div>
     </div>
 
-    <h1>Quittance de Loyer</h1>
-
-    <div class="section">
-        <h2>Bailleur / Mandataire</h2>
-        <p>
-            <strong>{{ agence.user.get_full_name|default:agence.user.username }}</strong><br>
-            {{ agence.user.addresse|linebreaksbr }}<br>
-            Téléphone : {{ agence.user.telephone }}<br>
-            Email : {{ agence.user.email }}
-        </p>
+    <div class="quittance-title">
+        <h1>Quittance de Loyer</h1>
     </div>
 
-    <div class="section">
-        <h2>Locataire</h2>
-        <p>
-            <strong>{{ locataire.prenom }} {{ locataire.nom }}</strong><br>
-            Logement situé au :<br>
-            {{ chambre.designation }}, {{ immeuble.addresse|linebreaksbr }}
-        </p>
-    </div>
+    <p>Reçu de <strong>{{ locataire }}</strong>, la somme de <strong>{{ paiement.montant|floatformat:0 }} Frcfa</strong> pour le paiement du loyer du mois de <strong>{{ paiement.mois_couvert }}</strong>.</p>
+    <p>Ce paiement concerne le logement situé à l'adresse : <strong>{{ immeuble.addresse }}</strong>, unité <strong>{{ chambre.designation }}</strong>.</p>
 
-    <p>
-        Je soussigné(e) {{ agence.user.get_full_name }}, mandataire du propriétaire {{ proprietaire.user.get_full_name }},
-        déclare avoir reçu de {{ locataire.prenom }} {{ locataire.nom }} la somme de :
-    </p>
-    <h2 style="text-align: center; margin: 20px 0;">{{ paiement.montant|floatformat:0 }} Frcfa</h2>
-    <p>
-        au titre du paiement du loyer et des charges pour la période du <strong>{{ paiement.mois_couvert }}</strong>.
-    </p>
-    <p>
-        Ce paiement a été effectué le <strong>{{ paiement.date_paiement|date:"d F Y" }}</strong> par <strong>{{ paiement.moyen_paiement }}</strong>.
-    </p>
-    <p>
-        Cette quittance annule tous les reçus qui auraient pu être donnés pour des acomptes versés au titre du présent terme.
-        Le paiement de cette quittance ne présume pas du paiement des termes précédents.
-    </p>
-
-    <div class="signature-section">
-        Fait à _______________, le {{ date_generation|date:"d F Y" }}.<br>
-        <div class="signature-line"></div><br>
-        (Signature du bailleur ou de son mandataire)
-    </div>
+    <table class="table">
+        <tr>
+            <th>Date du paiement</th>
+            <td>{{ paiement.date_paiement|date:"d F Y" }}</td>
+        </tr>
+        <tr>
+            <th>Moyen de paiement</th>
+            <td>{{ paiement.moyen_paiement }}</td>
+        </tr>
+    </table>
 
     <div class="footer">
-        {{ agence.user.get_full_name }} - SIRET : {{ agence.siret }}
+        <p>Fait à Lomé, le {{ date_generation|date:"d F Y" }}</p>
+        <p style="margin-top: 50px;">Pour l'agence, Signature et Cachet</p>
     </div>
 </body>
 </html>

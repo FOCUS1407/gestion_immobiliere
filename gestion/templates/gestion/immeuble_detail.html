@@ -1,134 +1,111 @@
 {% extends "gestion/base.html" %}
 
-{% block title %}Détails de l'immeuble : {{ immeuble.addresse|truncatechars:30 }}{% endblock %}
+{% block title %}Détails de l'immeuble : {{ immeuble.addresse|truncatewords:5 }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <!-- En-tête -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h2">{{ immeuble.addresse }}</h1>
+            <h1 class="h2">Immeuble : {{ immeuble.addresse|linebreaksbr }}</h1>
             <p class="text-muted">
                 Propriétaire : 
-                {% if request.user.user_type == 'AG' %}
-                    <a href="{% url 'gestion:proprietaire_detail' immeuble.proprietaire.user.pk %}">{{ immeuble.proprietaire.user.get_full_name }}</a>
+                {% if is_managing_agence %}
+                    <a href="{% url 'gestion:proprietaire_detail' immeuble.proprietaire.user.pk %}">{{ immeuble.proprietaire }}</a>
                 {% else %}
-                    {{ immeuble.proprietaire.user.get_full_name }}
+                    {{ immeuble.proprietaire }}
                 {% endif %}
             </p>
         </div>
         <div>
-            {% if request.user.user_type == 'AG' %}
-                <a href="{% url 'gestion:proprietaire_detail' immeuble.proprietaire.user.pk %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Retour au propriétaire</a>
-            {% elif request.user.user_type == 'PR' %}
-                <a href="{% url 'gestion:tableau_de_bord_proprietaire' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord</a>
+            {% if is_managing_agence %}
+                <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary me-2"><i class="fas fa-arrow-left me-1"></i>Retour</a>
+                <a href="{% url 'gestion:modifier_immeuble' immeuble.pk %}" class="btn btn-primary"><i class="fas fa-edit me-2"></i>Modifier l'immeuble</a>
+                <a href="{% url 'gestion:supprimer_immeuble' immeuble.pk %}" class="btn btn-outline-danger"><i class="fas fa-trash me-2"></i>Supprimer</a>
+            {% else %}
+                <a href="{% url 'gestion:tableau_de_bord_proprietaire' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Retour au tableau de bord</a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Cartes de statistiques -->
-    <div class="row mb-4">
-        <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 shadow-sm">
+    <!-- Statistiques -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Loyer mensuel total</h6>
-                    <p class="card-text h4">{{ total_rent|floatformat:0 }} Frcfa</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-lg-3 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Unités totales</h6>
-                    <p class="card-text h4">{{ chambres.count }} / {{ immeuble.nombre_chambres }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12 col-lg-6 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-subtitle mb-2 text-muted">Taux d'occupation</h6>
-                    <div class="progress" style="height: 25px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ occupancy_rate }}%;" aria-valuenow="{{ occupancy_rate }}" aria-valuemin="0" aria-valuemax="100">{{ occupancy_rate|floatformat:0 }}%</div>
+                    <h5 class="card-title">Taux d'occupation</h5>
+                    <p class="card-text fs-4 fw-bold">{{ occupied_units }} / {{ immeuble.nombre_chambres }} unités</p>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ occupancy_rate|floatformat:0 }}%;" aria-valuenow="{{ occupancy_rate|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">{{ occupancy_rate|floatformat:1 }}%</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Détails et Actions -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Détails de l'immeuble</h5>
-        </div>
-        <div class="card-body">
-            <p><strong>Type de bien :</strong> {{ immeuble.type_bien }}</p>
-            <p><strong>Superficie :</strong> {{ immeuble.superficie }} m²</p>
-            <p><strong>Date d'ajout :</strong> {{ immeuble.date_ajout|date:"d F Y" }}</p>
-            
-            {% if request.user.user_type == 'AG' %}
-            <hr>
-            <div class="mt-3">
-                <a href="{% url 'gestion:modifier_immeuble' immeuble.pk %}" class="btn btn-primary"><i class="fas fa-edit me-2"></i>Modifier l'immeuble</a>
-                <a href="{% url 'gestion:supprimer_immeuble' immeuble.pk %}" class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>Supprimer l'immeuble</a>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Loyer Mensuel Total</h5>
+                    <p class="card-text fs-4 fw-bold">{{ total_rent|floatformat:0 }} Frcfa</p>
+                    <small class="text-muted">Basé sur les unités occupées</small>
+                </div>
             </div>
-            {% endif %}
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Type de Bien</h5>
+                    <p class="card-text fs-4 fw-bold">{{ immeuble.type_bien }}</p>
+                    <small class="text-muted">Superficie: {{ immeuble.superficie }} m²</small>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Liste des unités -->
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Unités locatives ({{ chambres.count }})</h5>
-            {% if request.user.user_type == 'AG' %}
-            <a href="{% url 'gestion:ajouter_chambre' immeuble.pk %}" class="btn btn-success">
-                <i class="fas fa-plus me-2"></i>Ajouter une unité
-            </a>
+            <h5 class="mb-0">Unités dans cet immeuble</h5>
+            {% if is_managing_agence %}
+                <a href="{% url 'gestion:ajouter_chambre' immeuble.pk %}" class="btn btn-success"><i class="fas fa-plus me-2"></i>Ajouter une unité</a>
             {% endif %}
         </div>
         <div class="card-body p-0">
-            {% if chambres %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Désignation</th>
-                                <th>Loyer</th>
-                                <th>Statut</th>
-                                <th>Locataire</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for chambre in chambres %}
-                            <tr>
-                                <td>{{ chambre.designation }}</td>
-                                <td>{{ chambre.prix_loyer|floatformat:0 }} Frcfa</td>
-                                <td>
-                                    {% if chambre.locataire %}
-                                        <span class="badge bg-danger">Occupée</span>
-                                    {% else %}
-                                        <span class="badge bg-success">Libre</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ chambre.locataire|default:"--" }}</td>
-                                <td>
-                                    <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-sm btn-outline-primary">
-                                        {% if request.user.user_type == 'AG' %}
-                                            Gérer
-                                        {% else %}
-                                            Voir
-                                        {% endif %}
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted p-3">Cet immeuble n'a aucune unité enregistrée.</p>
-            {% endif %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Désignation</th>
+                            <th>Statut</th>
+                            <th>Locataire</th>
+                            <th>Loyer</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for chambre in chambres %}
+                        <tr>
+                            <td><strong>{{ chambre.designation }}</strong></td>
+                            <td>
+                                {% if chambre.locataire %}
+                                    <span class="badge bg-danger">Occupée</span>
+                                {% else %}
+                                    <span class="badge bg-success">Libre</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ chambre.locataire|default:"--" }}</td>
+                            <td>{{ chambre.prix_loyer|floatformat:0 }} Frcfa</td>
+                            <td class="text-end">
+                                <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-sm btn-outline-primary">Détails</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted p-4">Aucune unité n'a été ajoutée à cet immeuble.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

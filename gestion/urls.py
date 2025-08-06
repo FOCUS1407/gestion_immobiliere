@@ -10,7 +10,8 @@ urlpatterns = [
     path('connexion/', views.connexion, name='connexion'),
     path('deconnexion/', views.logout_view, name='logout'),
     path('inscription/', views.register, name='register'),
-    path('cgu/', views.terms_of_service_view, name='terms_of_service'),
+    path('terms-of-service/', views.terms_of_service_view, name='terms_of_service'),
+    path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
     path('profil/', views.profil_utilisateur, name='profil'),
 
     # URLs de changement de mot de passe
@@ -100,6 +101,7 @@ urlpatterns = [
     path('export/paiements/csv/', views.exporter_paiements_csv, name='exporter_paiements_csv'),
     path('rapports/financier/', views.rapport_financier, name='rapport_financier'),
     path('rapports/financier/pdf/', views.generer_rapport_financier_pdf, name='generer_rapport_financier_pdf'),
+    path('proprietaire/rapport-pdf/', views.generer_rapport_proprietaire_pdf, name='generer_rapport_proprietaire_pdf'),
 
     # Notifications
     path('notifications/', views.notification_list, name='notification_list'),

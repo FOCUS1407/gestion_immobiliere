@@ -1,0 +1,31 @@
+/*
+ * Feuille de style pour les documents PDF générés par WeasyPrint.
+ * Utilise Arial comme police principale pour une bonne compatibilité des caractères.
+*/
+
+body {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 11px;
+    color: #333;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.table th, .table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.table th {
+    background-color: #f2f2f2;
+}

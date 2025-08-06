@@ -1,43 +1,46 @@
-{% extends 'gestion/base.html' %}
+{% extends "gestion/base.html" %}
+
+{% block title %}Modifier le Profil de {{ proprietaire_user.get_full_name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-10">
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>Modifier le profil de : {{ proprietaire_user.get_full_name }}</h3>
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Modifier le Profil de {{ proprietaire_user.get_full_name }}</h4>
                 </div>
-                <div class="card-body">
-                    <form method="post" novalidate>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <h4>Informations personnelles</h4>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">{{ user_form.first_name.label_tag }} {{ user_form.first_name }}</div>
-                            <div class="col-md-6 mb-3">{{ user_form.last_name.label_tag }} {{ user_form.last_name }}</div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">{{ user_form.email.label_tag }} {{ user_form.email }}</div>
-                            <div class="col-md-6 mb-3">{{ user_form.telephone.label_tag }} {{ user_form.telephone }}</div>
-                        </div>
-                        <div class="mb-3">{{ user_form.addresse.label_tag }} {{ user_form.addresse }}</div>
+                        {% if user_form.non_field_errors or profile_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ user_form.non_field_errors }}
+                                {{ profile_form.non_field_errors }}
+                            </div>
+                        {% endif %}
 
-                        <h4 class="mt-4">Informations du contrat</h4>
+                        <h5 class="mt-2">Informations Personnelles</h5>
                         <hr>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">{{ profile_form.taux_commission.label_tag }} {{ profile_form.taux_commission }}</div>
-                            <div class="col-md-4 mb-3">{{ profile_form.date_debut_contrat.label_tag }} {{ profile_form.date_debut_contrat }}</div>
-                            <div class="col-md-4 mb-3">{{ profile_form.duree_contrat.label_tag }} {{ profile_form.duree_contrat }}</div>
-                        </div>
+                        {% for field in user_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+                                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors }}</div>{% endif %}
+                            </div>
+                        {% endfor %}
+
+                        <h5 class="mt-4">Informations du Contrat</h5>
+                        <hr>
+                        {% for field in profile_form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors }}</div>{% endif %}
+                            </div>
+                        {% endfor %}
 
                         <div class="d-flex justify-content-end mt-4">
                             <a href="{% url 'gestion:proprietaire_detail' proprietaire_user.pk %}" class="btn btn-secondary me-2">Annuler</a>

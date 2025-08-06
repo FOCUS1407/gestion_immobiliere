@@ -73,39 +73,54 @@
                                         <th>Mois Couvert</th>
                                         <th>Statut</th>
                                         <th>Date de Paiement</th>
-                                        <th>Montant Payé</th>
-                                        {% if request.user.user_type == 'AG' %}
-                                            <th>Actions</th>
-                                        {% endif %}
+                                        <th>Montant</th>
+                                        <th>Moyen</th>
+                                        <th>Preuve</th>
+                                        <th class="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for item in payment_history %}
-                                    <tr class="{% if item.status == 'unpaid' %}table-danger{% endif %}">
-                                        <td><strong>{{ item.month }}</strong></td>
+                                    <tr>
+                                        <td>{{ item.month }}</td>
                                         <td>
                                             {% if item.status == 'paid' %}
                                                 <span class="badge bg-success">Payé</span>
+                                            {% elif item.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark">En attente</span>
                                             {% else %}
-                                                <span class="badge bg-danger">Arriéré</span>
+                                                <span class="badge bg-danger">Impayé</span>
                                             {% endif %}
                                         </td>
-                                        <td>{{ item.payment.date_paiement|date:"d/m/Y"|default:"--" }}</td>
-                                        <td>
-                                            {% if item.payment %}
-                                                {{ item.payment.montant|floatformat:0 }} Frcfa
-                                            {% else %}
-                                                --
-                                            {% endif %}
-                                        </td>
-                                        {% if request.user.user_type == 'AG' %}
+                                        
+                                        {% if item.payment %}
+                                            <td>{{ item.payment.date_paiement|date:"d/m/Y" }}</td>
+                                            <td>{{ item.payment.montant|floatformat:0 }} Frcfa</td>
+                                            <td>{{ item.payment.moyen_paiement }}</td>
                                             <td>
-                                                {% if item.payment %}
-                                                    <a href="{% url 'gestion:modifier_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-secondary" title="Modifier"><i class="fas fa-edit"></i></a>
-                                                    <a href="{% url 'gestion:supprimer_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fas fa-trash"></i></a>
-                                                    <a href="{% url 'gestion:generer_quittance_pdf' item.payment.pk %}" class="btn btn-sm btn-outline-info" title="Générer la quittance"><i class="fas fa-file-pdf"></i></a>
+                                                {% if item.payment.preuve_paiement %}
+                                                    <a href="{{ item.payment.preuve_paiement.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Voir la preuve de paiement">
+                                                      <i class="bi bi-file-earmark-text">Voir la preuve</i>
+                                                    </a>
                                                 {% else %}
-                                                    <a href="{% url 'gestion:ajouter_paiement' chambre.pk %}?mois={{ item.month|urlencode }}" class="btn btn-sm btn-success" title="Enregistrer le paiement pour ce mois">Payer</a>
+                                                   -
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if is_managing_agence %}
+                                                   <a href="{% url 'gestion:modifier_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-primary" title="Modifier">Modifier <i class="bi bi-pencil"></i></a>
+                                                   <a href="{% url 'gestion:supprimer_paiement' item.payment.pk %}" class="btn btn-sm btn-outline-danger" title="Supprimer">Supprimer <i class="bi bi-trash"></i></a>
+                                                   {% if item.payment.est_valide %}
+                                                        <a href="{% url 'gestion:generer_quittance_pdf' item.payment.pk %}" class="btn btn-sm btn-outline-info" title="Générer la quittance" target="_blank">Générer la quittance <i class="bi bi-receipt"></i></a>
+                                                   {% endif %}
+                                                {% endif %}
+                                            </td>
+                                        {% else %}
+                                            {# Cas pour les mois impayés #}
+                                            <td colspan="4" class="text-muted text-center">---</td>
+                                            <td class="text-end">
+                                                {% if is_managing_agence %}
+                                                    <a href="{% url 'gestion:ajouter_paiement' chambre.pk %}?mois={{ item.month|urlencode }}" class="btn btn-sm btn-success">Ajouter un paiement</a>
                                                 {% endif %}
                                             </td>
                                         {% endif %}

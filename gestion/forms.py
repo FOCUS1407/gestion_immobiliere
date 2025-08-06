@@ -165,7 +165,7 @@ class PaiementForm(forms.ModelForm):
     class Meta:
         model = Paiement
         # La 'location' sera définie dans la vue.
-        fields = ['montant', 'date_paiement', 'mois_couvert', 'moyen_paiement', 'est_valide']
+        fields = ['montant', 'date_paiement', 'mois_couvert', 'moyen_paiement', 'est_valide', 'preuve_paiement']
         widgets = {
             'date_paiement': forms.DateInput(attrs={'type': 'date'}),
         }
@@ -173,7 +173,8 @@ class PaiementForm(forms.ModelForm):
             'montant': "Montant payé (Frcfa)",
             'date_paiement': "Date du paiement",
             'mois_couvert': "Mois du loyer couvert (ex: Août 2024)",
-            'est_valide': "Marquer ce paiement comme validé/confirmé"
+            'est_valide': "Marquer ce paiement comme validé/confirmé",
+            'preuve_paiement': "Joindre une preuve de paiement (reçu, capture d'écran, etc.)",
         }
 
     def __init__(self, *args, **kwargs):
@@ -181,7 +182,50 @@ class PaiementForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-control'
+        
+        # Amélioration pour Bootstrap 5 : utiliser form-select pour les listes déroulantes
+        if 'moyen_paiement' in self.fields:
+            self.fields['moyen_paiement'].widget.attrs['class'] = 'form-select'
+            
+        # Rendre le champ non obligatoire par défaut. La validation se fera dans la méthode clean().
+        self.fields['preuve_paiement'].required = False
+        self.fields['preuve_paiement'].help_text = "Formats autorisés : PDF, JPG, PNG. Taille maximale : 5 Mo."
 
+    def clean(self):
+        cleaned_data = super().clean()
+        moyen_paiement = cleaned_data.get('moyen_paiement')
+        preuve_paiement = cleaned_data.get('preuve_paiement') # Donnée du formulaire (fichier, None, ou False)
+
+        if moyen_paiement:
+            # Définir les moyens de paiement qui nécessitent une preuve
+            requires_proof_designations = [MoyenPaiement.MOBILE, MoyenPaiement.VIREMENT, MoyenPaiement.DEPOT_ESPECES]
+            
+            if moyen_paiement.designation in requires_proof_designations:
+                # Une preuve est considérée comme absente si :
+                # 1. L'utilisateur coche "Effacer" (`preuve_paiement` est False).
+                # 2. L'utilisateur ne téléverse rien (`preuve_paiement` est None) ET il n'y avait pas de fichier avant.
+                has_existing_file = self.instance.pk and self.instance.preuve_paiement
+                if preuve_paiement is False or (preuve_paiement is None and not has_existing_file):
+                    self.add_error('preuve_paiement', "Une preuve de paiement est obligatoire pour ce moyen de paiement.")
+        
+        return cleaned_data
+
+    def clean_preuve_paiement(self):
+        """Valide le type et la taille du fichier de preuve de paiement."""
+        preuve = self.cleaned_data.get('preuve_paiement', False)
+
+        # La validation ne s'applique que si un nouveau fichier est téléversé.
+        if preuve and hasattr(preuve, 'content_type'):
+            # 1. Valider la taille du fichier (ex: limite de 5 Mo)
+            if preuve.size > 5 * 1024 * 1024:
+                raise forms.ValidationError("Le fichier est trop volumineux. La taille maximale est de 5 Mo.")
+
+            # 2. Valider le type de fichier (MIME type)
+            allowed_types = ['application/pdf', 'image/jpeg', 'image/png']
+            if preuve.content_type not in allowed_types:
+                raise forms.ValidationError("Type de fichier non autorisé. Seuls les PDF et les images (JPG, PNG) sont acceptés.")
+        
+        return preuve
 class EtatDesLieuxForm(forms.ModelForm):
     """Formulaire pour créer un état des lieux."""
     class Meta:

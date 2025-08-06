@@ -16,9 +16,9 @@
                         Locataire : <strong>{{ paiement.location.locataire }}</strong>
                     </p>
                     <hr>
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
                         {% endif %}
@@ -45,6 +45,14 @@
                             {{ form.moyen_paiement }}
                             {% if form.moyen_paiement.errors %}<div class="invalid-feedback d-block">{{ form.moyen_paiement.errors }}</div>{% endif %}
                         </div>
+                        <div class="mb-3">
+                            <label for="{{ form.preuve_paiement.id_for_label }}" class="form-label">{{ form.preuve_paiement.label }}</label>
+                            {{ form.preuve_paiement }}
+                            {% if form.preuve_paiement.help_text %}
+                                <div class="form-text">{{ form.preuve_paiement.help_text|safe }}</div>
+                            {% endif %}
+                            {% if form.preuve_paiement.errors %}<div class="invalid-feedback d-block">{{ form.preuve_paiement.errors }}</div>{% endif %}
+                        </div>
                         <div class="form-check mb-4">
                             {{ form.est_valide }}
                             <label class="form-check-label" for="{{ form.est_valide.id_for_label }}">{{ form.est_valide.label }}</label>
@@ -61,4 +69,34 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascript %}
+{{ pks_require_proof|json_script:"pks-data" }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const moyenPaiementSelect = document.getElementById('{{ form.moyen_paiement.id_for_label }}');
+    const preuvePaiementLabel = document.querySelector('label[for="{{ form.preuve_paiement.id_for_label }}"]');
+    const pksRequireProof = JSON.parse(document.getElementById('pks-data').textContent);
+    const originalLabel = preuvePaiementLabel.innerHTML;
+
+    function togglePreuveRequired() {
+        // La valeur du select est le PK du MoyenPaiement
+        const selectedPk = parseInt(moyenPaiementSelect.value, 10);
+
+        if (pksRequireProof.includes(selectedPk)) {
+            // Ajoute un astérisque rouge pour indiquer que le champ est obligatoire
+            preuvePaiementLabel.innerHTML = originalLabel + ' <span class="text-danger">*</span>';
+        } else {
+            preuvePaiementLabel.innerHTML = originalLabel;
+        }
+    }
+
+    // Vérification initiale au chargement de la page
+    togglePreuveRequired();
+
+    // Ajout de l'écouteur d'événement pour les changements
+    moyenPaiementSelect.addEventListener('change', togglePreuveRequired);
+});
+</script>
 {% endblock %}

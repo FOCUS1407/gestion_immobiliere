@@ -128,6 +128,10 @@ def terms_of_service_view(request):
     """Affiche la page des conditions d'utilisation."""
     return render(request, 'gestion/terms_of_service.html')
 
+def privacy_policy_view(request):
+    """Affiche la page de la politique de confidentialité."""
+    return render(request, 'gestion/privacy_policy.html')
+
 # Vues de placeholder pour éviter les erreurs
 @login_required
 def tableau_de_bord_agence(request):
@@ -300,23 +304,88 @@ def tableau_de_bord_agence(request):
 def tableau_de_bord_proprietaire(request):
     """
     Affiche le tableau de bord pour un utilisateur de type Propriétaire,
-    listant ses immeubles.
+    listant ses immeubles et un résumé financier.
     """
     if request.user.user_type != 'PR':
         raise PermissionDenied("Seuls les propriétaires peuvent accéder à cette page.")
+
+    # Initialisation des variables
+    immeubles_proprietaire = Immeuble.objects.none()
+    nombre_immeubles = 0
+    total_attendu_mois = Decimal('0.00')
+    total_paye_mois = Decimal('0.00')
+    commission_mois = Decimal('0.00')
+    monthly_rent_details = []
+    
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, '')
+    current_month_display = timezone.now().strftime('%B %Y').capitalize()
 
     try:
         proprietaire_profil = request.user.proprietaire
         immeubles_proprietaire = Immeuble.objects.filter(proprietaire=proprietaire_profil).select_related('type_bien')
         nombre_immeubles = immeubles_proprietaire.count()
+
+        # --- Calcul du résumé financier et du rapport détaillé pour le mois en cours ---
+        if nombre_immeubles > 0:
+            # 1. Récupérer toutes les locations actives pour ce propriétaire
+            locations_actives = Location.objects.filter(
+                chambre__immeuble__proprietaire=proprietaire_profil,
+                date_sortie__isnull=True
+            ).select_related('chambre', 'locataire')
+
+            # 2. Récupérer les paiements du mois pour ces locations
+            paiements_du_mois = Paiement.objects.filter(
+                location__in=locations_actives,
+                mois_couvert=current_month_display,
+                est_valide=True
+            )
+            paiements_map = {p.location_id: p for p in paiements_du_mois}
+
+            # 3. Itérer sur les locations pour construire le rapport et calculer les totaux
+            for location in locations_actives:
+                loyer_a_payer = location.chambre.prix_loyer
+                paiement = paiements_map.get(location.id)
+
+                if paiement:
+                    loyer_paye = paiement.montant
+                    date_paiement = paiement.date_paiement
+                else:
+                    loyer_paye = Decimal('0.00')
+                    date_paiement = None
+                
+                reste_a_payer = loyer_a_payer - loyer_paye
+
+                monthly_rent_details.append({
+                    'locataire': location.locataire,
+                    'chambre': location.chambre,
+                    'loyer_a_payer': loyer_a_payer,
+                    'loyer_paye': loyer_paye,
+                    'reste_a_payer': reste_a_payer,
+                    'date_paiement': date_paiement,
+                    
+                })
+
+                # Mettre à jour les totaux
+                total_attendu_mois += loyer_a_payer
+                total_paye_mois += loyer_paye
+
+            # 4. Calculer la commission
+            if proprietaire_profil.taux_commission > 0:
+                commission_mois = total_paye_mois * (proprietaire_profil.taux_commission / Decimal('100.0'))
+
     except Proprietaire.DoesNotExist:
-        immeubles_proprietaire = Immeuble.objects.none()
-        nombre_immeubles = 0
         messages.warning(request, "Votre profil de propriétaire n'est pas complet ou n'a pas été trouvé.")
 
+    total_impaye_mois = total_attendu_mois - total_paye_mois
+
     context = {
-        'immeubles': immeubles_proprietaire,
-        'nombre_immeubles': nombre_immeubles,
+        'immeubles': immeubles_proprietaire, 'nombre_immeubles': nombre_immeubles,
+        'current_month_display': current_month_display, 'total_attendu_mois': total_attendu_mois,
+        'total_paye_mois': total_paye_mois, 'total_impaye_mois': total_impaye_mois, 'commission_mois': commission_mois,
+        'monthly_rent_details': monthly_rent_details,
     }
     return render(request, 'gestion/tableau_de_bord_proprietaire.html', context)
 
@@ -527,7 +596,7 @@ def modifier_proprietaire(request, pk):
         raise PermissionDenied("Votre profil d'agence est incomplet.")
 
     if request.method == 'POST':
-        user_form = UserUpdateForm(request.POST, instance=proprietaire_user)
+        user_form = UserUpdateForm(request.POST, request.FILES, instance=proprietaire_user)
         profile_form = ProprietaireProfileUpdateForm(request.POST, instance=proprietaire_profil)
 
         if user_form.is_valid() and profile_form.is_valid():
@@ -779,13 +848,16 @@ def immeuble_detail(request, pk):
     if total_units > 0:
         occupancy_rate = (occupied_units / total_units) * 100
         
-    total_rent = chambres.aggregate(total=Sum('prix_loyer'))['total'] or 0
+    # Le loyer total ne doit concerner que les unités occupées
+    total_rent = chambres.filter(locataire__isnull=False).aggregate(total=Sum('prix_loyer'))['total'] or 0
 
     context = {
         'immeuble': immeuble,
         'chambres': chambres,
         'occupancy_rate': occupancy_rate,
         'total_rent': total_rent,
+        'is_managing_agence': is_managing_agence,
+        'occupied_units': occupied_units,
     }
     return render(request, 'gestion/immeuble_detail.html', context)
 
@@ -1011,10 +1083,10 @@ def chambre_detail(request, pk):
     payment_history = []
     if chambre.locataire:
         if location_active:
-            # Récupérer tous les paiements validés et les mapper par mois pour un accès rapide
-            paid_payments = {
+            # Récupérer tous les paiements (validés ou non) et les mapper par mois pour un accès rapide
+            all_payments = {
                 p.mois_couvert: p 
-                for p in Paiement.objects.filter(location=location_active, est_valide=True).order_by('date_paiement')
+                for p in Paiement.objects.filter(location=location_active).order_by('date_paiement')
             }
             
             # Définir la locale en français pour générer les noms de mois correctement
@@ -1029,10 +1101,14 @@ def chambre_detail(request, pk):
 
             while cursor_date.year < end_date.year or (cursor_date.year == end_date.year and cursor_date.month <= end_date.month):
                 month_str = cursor_date.strftime('%B %Y').capitalize()
-                payment_obj = paid_payments.get(month_str)
+                payment_obj = all_payments.get(month_str)
                 
                 if payment_obj:
-                    payment_history.append({'month': month_str, 'status': 'paid', 'payment': payment_obj})
+                    if payment_obj.est_valide:
+                        status = 'paid'
+                    else:
+                        status = 'pending'
+                    payment_history.append({'month': month_str, 'status': status, 'payment': payment_obj})
                 else:
                     payment_history.append({'month': month_str, 'status': 'unpaid', 'payment': None})
                 
@@ -1048,6 +1124,7 @@ def chambre_detail(request, pk):
         'etats_des_lieux': etats_des_lieux,
         'location_active': location_active,
         'payment_history': payment_history,
+        'is_managing_agence': is_managing_agence,
     }
     return render(request, 'gestion/chambre_detail.html', context)
 
@@ -1230,7 +1307,7 @@ def ajouter_paiement(request, chambre_id):
         return redirect('gestion:chambre_detail', pk=chambre.pk)
 
     if request.method == 'POST':
-        form = PaiementForm(request.POST)
+        form = PaiementForm(request.POST, request.FILES)
         if form.is_valid():
             # Vérification pour éviter les doublons
             mois_couvert = form.cleaned_data['mois_couvert']
@@ -1239,7 +1316,7 @@ def ajouter_paiement(request, chambre_id):
             else:
                 paiement = form.save(commit=False)
                 paiement.location = location
-                paiement.save()
+                paiement.save() # La sauvegarde du formulaire gère l'upload du fichier
                 messages.success(request, f"Le paiement de {paiement.montant} Frcfa a été enregistré avec succès.")
                 return redirect('gestion:chambre_detail', pk=chambre.pk)
     else:
@@ -1252,10 +1329,16 @@ def ajouter_paiement(request, chambre_id):
         }
         form = PaiementForm(initial=initial_data)
 
+    # Récupérer les PK des moyens de paiement qui nécessitent une preuve pour le JS du template
+    pks_require_proof = list(MoyenPaiement.objects.filter(
+        designation__in=[MoyenPaiement.MOBILE, MoyenPaiement.VIREMENT, MoyenPaiement.DEPOT_ESPECES]
+    ).values_list('pk', flat=True))
+
     context = {
         'form': form,
         'chambre': chambre,
         'location': location,
+        'pks_require_proof': pks_require_proof,
     }
     return render(request, 'gestion/ajouter_paiement.html', context)
 
@@ -1280,18 +1363,24 @@ def modifier_paiement(request, pk):
         raise PermissionDenied("Seules les agences peuvent modifier un paiement.")
 
     if request.method == 'POST':
-        form = PaiementForm(request.POST, instance=paiement)
+        form = PaiementForm(request.POST, request.FILES, instance=paiement)
         if form.is_valid():
-            form.save()
+            form.save() # La sauvegarde du formulaire gère l'upload du fichier
             messages.success(request, "Le paiement a été mis à jour avec succès.")
             return redirect('gestion:chambre_detail', pk=chambre.pk)
     else:
         form = PaiementForm(instance=paiement)
 
+    # Récupérer les PK des moyens de paiement qui nécessitent une preuve pour le JS du template
+    pks_require_proof = list(MoyenPaiement.objects.filter(
+        designation__in=[MoyenPaiement.MOBILE, MoyenPaiement.VIREMENT, MoyenPaiement.DEPOT_ESPECES]
+    ).values_list('pk', flat=True))
+
     context = {
         'form': form,
         'paiement': paiement,
         'chambre': chambre,
+        'pks_require_proof': pks_require_proof,
     }
     return render(request, 'gestion/modifier_paiement.html', context)
 
@@ -1599,6 +1688,71 @@ def rapport_financier(request):
         'page_title': 'Rapport Financier Mensuel',
     }
     return render(request, 'gestion/rapport_financier.html', context)
+
+@login_required
+def generer_rapport_proprietaire_pdf(request):
+    """
+    Génère un rapport PDF détaillé pour le propriétaire pour le mois en cours.
+    """
+    if HTML is None:
+        return HttpResponse("La bibliothèque WeasyPrint est requise pour générer des PDF. Veuillez l'installer avec 'pip install WeasyPrint'.", status=501)
+
+    if request.user.user_type != 'PR':
+        raise PermissionDenied("Seuls les propriétaires peuvent générer ce rapport.")
+
+    # --- Reprise de la logique de `tableau_de_bord_proprietaire` ---
+    monthly_rent_details = []
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_TIME, '')
+    current_month_display = timezone.now().strftime('%B %Y').capitalize()
+
+    try:
+        proprietaire_profil = request.user.proprietaire
+        agence = proprietaire_profil.agence # Récupérer l'agence pour l'en-tête
+
+        locations_actives = Location.objects.filter(
+            chambre__immeuble__proprietaire=proprietaire_profil,
+            date_sortie__isnull=True
+        ).select_related('chambre', 'locataire')
+
+        paiements_du_mois = Paiement.objects.filter(
+            location__in=locations_actives,
+            mois_couvert=current_month_display,
+            est_valide=True
+        )
+        paiements_map = {p.location_id: p for p in paiements_du_mois}
+
+        for location in locations_actives:
+            loyer_a_payer = location.chambre.prix_loyer
+            paiement = paiements_map.get(location.id)
+            loyer_paye = paiement.montant if paiement else Decimal('0.00')
+            
+            monthly_rent_details.append({
+                'locataire': location.locataire, 'chambre': location.chambre,
+                'loyer_a_payer': loyer_a_payer, 'loyer_paye': loyer_paye,
+                'reste_a_payer': loyer_a_payer - loyer_paye,
+                'date_paiement': paiement.date_paiement if paiement else None,
+            })
+
+    except (Proprietaire.DoesNotExist, Agence.DoesNotExist):
+        messages.error(request, "Votre profil ou l'agence associée est introuvable.")
+        return redirect('gestion:tableau_de_bord_proprietaire')
+
+    context = {
+        'proprietaire': proprietaire_profil, 'agence': agence,
+        'monthly_rent_details': monthly_rent_details, 'current_month_display': current_month_display,
+        'date_generation': timezone.now().date(),
+    }
+
+    html_string = render_to_string('gestion/rapport_proprietaire_pdf.html', context)
+    pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    filename = f"rapport_detaille_{current_month_display.replace(' ', '_')}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 @login_required
 def generer_rapport_financier_pdf(request):
