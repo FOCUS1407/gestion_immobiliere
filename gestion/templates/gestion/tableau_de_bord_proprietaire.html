@@ -1,141 +1,112 @@
 {% extends "gestion/base.html" %}
-{% load humanize %}
+{% load static %}
 
-{% block title %}Tableau de bord Propriétaire{% endblock %}
+{% block title %}Tableau de Bord Propriétaire{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Tableau de bord</h1>
-        <span class="text-muted">Propriétaire : {{ user.get_full_name }}</span>
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Mon Tableau de Bord</h1>
+        <a href="{% url 'gestion:generer_rapport_financier_pdf' %}" class="btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-download fa-sm text-white-50"></i> Télécharger mon rapport annuel
+        </a>
     </div>
 
-    <!-- Résumé Financier du Mois -->
+    <!-- Widgets -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Loyer Attendu ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_attendu_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-calendar fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Loyer Payé ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_paye_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Loyer Impayé ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_impaye_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Commission Agence ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ commission_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-handshake fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des immeubles -->
     <div class="row">
         <div class="col-12">
-            <h4 class="mb-3">Résumé pour {{ current_month_display }}</h4>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm text-center h-100">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Mes Immeubles ({{ nombre_immeubles }})</h6>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title text-muted">Total Attendu</h5>
-                    <p class="card-text fs-4 fw-bold">{{ total_attendu_mois|floatformat:0|intcomma }} Frcfa</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Adresse</th>
+                                    <th>Type</th>
+                                    <th class="text-center">Unités</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for immeuble in immeubles %}
+                                <tr>
+                                    <td>{{ immeuble.addresse }}</td>
+                                    <td>{{ immeuble.type_bien }}</td>
+                                    <td class="text-center">{{ immeuble.nombre_chambres }}</td>
+                                    <td>
+                                        <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-sm btn-info">Voir les unités</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Vous n'avez aucun immeuble enregistré.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-success">Total Payé</h5>
-                    <p class="card-text fs-4 fw-bold text-success">{{ total_paye_mois|floatformat:0|intcomma }} Frcfa</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-danger">Total Impayé</h5>
-                    <p class="card-text fs-4 fw-bold text-danger">{{ total_impaye_mois|floatformat:0|intcomma }} Frcfa</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm text-center h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-info">Commission Agence</h5>
-                    <p class="card-text fs-4 fw-bold text-info">{{ commission_mois|floatformat:0|intcomma }} Frcfa</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Liste des Immeubles -->
-    <div class="card shadow-sm mt-3">
-        <div class="card-header">
-            <h5 class="mb-0">Mes Immeubles ({{ nombre_immeubles }})</h5>
-        </div>
-        <div class="card-body p-0">
-            {% if immeubles %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Adresse</th>
-                                <th>Type de bien</th>
-                                <th>Unités</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for immeuble in immeubles %}
-                            <tr>
-                                <td>{{ immeuble.addresse|linebreaksbr }}</td>
-                                <td>{{ immeuble.type_bien }}</td>
-                                <td>{{ immeuble.nombre_chambres }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="btn btn-sm btn-outline-primary">Voir les détails</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center text-muted p-4">
-                    <p>Vous n'avez aucun immeuble enregistré pour le moment.</p>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Rapport Détaillé Mensuel -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Détail des loyers pour {{ current_month_display }}</h5>
-            <a href="{% url 'gestion:generer_rapport_proprietaire_pdf' %}" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-file-pdf me-1"></i> Télécharger en PDF
-            </a>
-        </div>
-        <div class="card-body p-0">
-            {% if monthly_rent_details %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Locataire</th>
-                                <th>Unité</th>
-                                <th>Loyer à Payer</th>
-                                <th>Loyer Payé</th>
-                                <th>Reste à Payer</th>
-                                <th>Date de Paiement</th>
-                                
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for detail in monthly_rent_details %}
-                            <tr>
-                                <td>{{ detail.locataire }}</td>
-                                <td>{{ detail.chambre.designation }}</td>
-                                <td>{{ detail.loyer_a_payer|floatformat:0|intcomma }} Frcfa</td>
-                                <td>{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
-                                <td>
-                                    {% if detail.reste_a_payer > 0 %}
-                                        <span class="text-danger fw-bold">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</span>
-                                    {% else %}
-                                        <span>{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ detail.date_paiement|date:"d/m/Y"|default:"--" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center text-muted p-4">
-                    <p>Aucun détail de loyer à afficher pour ce mois.</p>
-                </div>
-            {% endif %}
         </div>
     </div>
 </div>

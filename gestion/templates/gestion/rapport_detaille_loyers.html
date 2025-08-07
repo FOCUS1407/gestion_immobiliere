@@ -1,0 +1,109 @@
+{% extends 'gestion/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">{{ page_title }}</h4>
+            <div>
+                <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary btn-sm me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+                <a href="{% url 'gestion:exporter_rapport_detaille_pdf' %}?proprietaire_id={{ selected_proprietaire_id|default_if_none:'' }}&mois={{ selected_month_str }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-file-pdf me-2"></i>Exporter en PDF
+                </a>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- ======================= Formulaire de Filtrage ======================= -->
+            <div class="card mb-4">
+                <div class="card-body bg-light">
+                    <h5 class="card-title">Filtrer le rapport</h5>
+                    <!-- Le formulaire doit utiliser la méthode GET pour que les filtres apparaissent dans l'URL -->
+                    <form action="{% url 'gestion:rapport_detaille_loyers' %}" method="GET" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label for="proprietaire_id" class="form-label">Propriétaire</label>
+                            <!-- Le name="proprietaire_id" est crucial -->
+                            <select name="proprietaire_id" id="proprietaire_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">--- Tous les propriétaires ---</option>
+                                {% for p in proprietaires_agence %}
+                                    <!-- On vérifie si l'ID du propriétaire correspond à celui sélectionné pour le pré-remplir -->
+                                    <option value="{{ p.user.id }}" {% if p.user.id == selected_proprietaire_id %}selected{% endif %}>
+                                        {{ p.user.get_full_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="mois" class="form-label">Mois et Année</label>
+                            <!-- Le name="mois" est crucial -->
+                            <!-- On met la valeur sélectionnée dans l'attribut value -->
+                            <input type="month" name="mois" id="mois" class="form-control" value="{{ selected_month_str }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter me-2"></i>Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ======================= Affichage des Résultats ======================= -->
+            <h5 class="mb-3">
+                Rapport pour : <span class="text-success">{{ mois_couvert_str }}</span>
+                {% if proprietaire_filtre %}
+                    - Propriétaire : <span class="text-info">{{ proprietaire_filtre.user.get_full_name }}</span>
+                {% endif %}
+            </h5>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Locataire</th>
+                            <th>Unité (Chambre)</th>
+                            <th class="text-end">Loyer Attendu</th>
+                            <th class="text-end">Loyer Payé</th>
+                            <th class="text-end">Reste à Payer</th>
+                            <th>Date de Paiement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in monthly_rent_details %}
+                        <tr>
+                            <td>{{ detail.locataire.prenom }} {{ detail.locataire.nom }}</td>
+                            <td>{{ detail.chambre.designation }} ({{ detail.chambre.immeuble.addresse|truncatechars:30 }})</td>
+                            <td class="text-end">{{ detail.loyer_a_payer|floatformat:0|intcomma }} Frcfa</td>
+                            <td class="text-end {% if detail.loyer_paye > 0 %}text-success fw-bold{% endif %}">{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
+                            <td class="text-end {% if detail.reste_a_payer > 0 %}text-danger fw-bold{% endif %}">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</td>
+                            <td>{{ detail.date_paiement|date:"d/m/Y"|default:"--" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                Aucune donnée de location à afficher pour la période et le filtre sélectionnés.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-secondary fw-bold">
+                            <td colspan="2" class="text-end">Totaux</td>
+                            <td class="text-end">{{ totals.attendu|floatformat:0|intcomma }} Frcfa</td>
+                            <td class="text-end text-success">{{ totals.paye|floatformat:0|intcomma }} Frcfa</td>
+                            <td class="text-end text-danger">{{ totals.impaye|floatformat:0|intcomma }} Frcfa</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -94,14 +94,15 @@ urlpatterns = [
     path('etats-des-lieux/<int:pk>/modifier/', views.modifier_etat_des_lieux, name='modifier_etat_des_lieux'),
     path('etats-des-lieux/<int:pk>/supprimer/', views.supprimer_etat_des_lieux, name='supprimer_etat_des_lieux'),
     path('etats-des-lieux/<int:pk>/pdf/', views.generer_etat_des_lieux_pdf, name='generer_etat_des_lieux_pdf'),
-
+    # Retour vers le tableau de bord
+    path('rapport-detaille-loyers/', views.rapport_detaille_loyers, name='rapport_detaille_loyers'),
     # Paramètres et Exports
     path('parametres/moyens-paiement/', views.gerer_moyens_paiement, name='gerer_moyens_paiement'),
-    path('parametres/moyens-paiement/<int:pk>/supprimer/', views.supprimer_moyen_paiement, name='supprimer_moyen_paiement'),
-    path('export/paiements/csv/', views.exporter_paiements_csv, name='exporter_paiements_csv'),
+    path('parametres/moyens-paiement/<int:pk>/supprimer/', views.supprimer_moyen_paiement, name='supprimer_moyen_paiement'),    
     path('rapports/financier/', views.rapport_financier, name='rapport_financier'),
     path('rapports/financier/pdf/', views.generer_rapport_financier_pdf, name='generer_rapport_financier_pdf'),
-    path('proprietaire/rapport-pdf/', views.generer_rapport_proprietaire_pdf, name='generer_rapport_proprietaire_pdf'),
+    path('rapport-detaille/pdf/', views.exporter_rapport_detaille_pdf, name='exporter_rapport_detaille_pdf'),
+    path('export/paiements/pdf/', views.exporter_paiements_pdf, name='exporter_paiements_pdf'),
 
     # Notifications
     path('notifications/', views.notification_list, name='notification_list'),

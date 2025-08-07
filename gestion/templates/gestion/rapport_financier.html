@@ -1,133 +1,105 @@
-{% extends 'gestion/base.html' %}
-{% load humanize %}
+{% extends "gestion/base.html" %}
+{% load static %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title|default:"Rapport Financier" }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">{{ page_title }}</h1>
-    <div>
-        <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary me-2">
-            <i class="fas fa-arrow-left me-2"></i>Retour
-        </a>
-        <!-- Exporter les paiements en CSV 
-        <a href="{% url 'gestion:exporter_paiements_csv' %}" class="btn btn-outline-secondary me-2">
-            <i class="fas fa-file-csv me-2"></i>Exporter (CSV)
-        </a>
-         -->
-        <a href="{% url 'gestion:generer_rapport_financier_pdf' %}?proprietaire_id={{ selected_owner_id|default_if_none:'' }}&mois={{ selected_month_str }}" class="btn btn-danger" target="_blank">
-            <i class="fas fa-file-pdf me-2"></i>Imprimer (PDF)
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ page_title|default:"Rapport Financier Mensuel" }}</h1>
+        <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm"></i> Retour au tableau de bord
         </a>
     </div>
-</div>
 
-<!-- Filtres -->
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-5">
-                <label for="proprietaire_id" class="form-label">Filtrer par propriétaire</label>
-                <select name="proprietaire_id" id="proprietaire_id" class="form-select">
-                    <option value="">Tous les propriétaires</option>
-                    {% for p in proprietaires_agence %}
-                        <option value="{{ p.id }}" {% if p.id == selected_owner_id %}selected{% endif %}>
-                            {{ p.user.get_full_name|default:p.user.username }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-5">
-                <label for="mois" class="form-label">Mois du rapport</label>
-                <input type="month" name="mois" id="mois" class="form-control" value="{{ selected_month_str }}">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-            </div>
-        </form>
+    <!-- Formulaire de filtre -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Filtres du rapport</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'gestion:rapport_financier' %}" id="report-filter-form">
+                <div class="row align-items-end">
+                    <div class="col-md-5">
+                        <label for="proprietaire_id" class="form-label">Filtrer par propriétaire</label>
+                        <select name="proprietaire_id" id="proprietaire_id" class="form-select">
+                            <option value="">Tous les propriétaires</option>
+                            {% for proprietaire in proprietaires_agence %}
+                                <option value="{{ proprietaire.pk }}" {% if proprietaire.pk == selected_owner_id %}selected{% endif %}>
+                                    {{ proprietaire.user.get_full_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Filtrer</button>
+                        <button type="submit" name="download_pdf" value="1" class="btn btn-success">
+                            <i class="fas fa-file-pdf"></i> Télécharger en PDF
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<!-- Résumé Global -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary h-100">
-            <div class="card-body">
-                <h6 class="card-title">Total Attendu</h6>
-                <h4 class="card-text">{{ grand_total_attendu|floatformat:0|intcomma }} Frcfa</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-success h-100">
-            <div class="card-body">
-                <h6 class="card-title">Total Payé</h6>
-                <h4 class="card-text">{{ grand_total_paye|floatformat:0|intcomma }} Frcfa</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-danger h-100">
-            <div class="card-body">
-                <h6 class="card-title">Total Impayé</h6>
-                <h4 class="card-text">{{ grand_total_impaye|floatformat:0|intcomma }} Frcfa</h4>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-dark bg-warning h-100">
-            <div class="card-body">
-                <h6 class="card-title">Commission Agence</h6>
-                <h4 class="card-text">{{ grand_total_commission|floatformat:0|intcomma }} Frcfa</h4>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Détails par Propriétaire -->
-{% for detail in report_details %}
-<div class="card shadow-sm mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">
-            <a href="{% url 'gestion:proprietaire_detail' detail.proprietaire.user.pk %}">
-                {{ detail.proprietaire.user.get_full_name|default:detail.proprietaire.user.username }}
-            </a>
-        </h4>
-        <span class="badge bg-secondary">Commission: {{ detail.commission|floatformat:0|intcomma }} Frcfa</span>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="ps-3">Immeuble</th>
-                        <th class="text-end">Loyer Attendu</th>
-                        <th class="text-end">Loyer Payé</th>
-                        <th class="text-end pe-3">Loyer Impayé</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for data in detail.immeubles_data %}
-                    <tr>
-                        <td class="ps-3"><a href="{% url 'gestion:immeuble_detail' data.immeuble.pk %}">{{ data.immeuble.addresse|truncatechars:50 }}</a></td>
-                        <td class="text-end">{{ data.total_attendu|floatformat:0|intcomma }}</td>
-                        <td class="text-end text-success">{{ data.total_paye|floatformat:0|intcomma }}</td>
-                        <td class="text-end text-danger pe-3">{{ data.total_impaye|floatformat:0|intcomma }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="4" class="text-center text-muted py-3">Ce propriétaire n'a aucun immeuble.</td></tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr class="fw-bold table-group-divider">
-                        <td class="ps-3">Total Propriétaire</td>
-                        <td class="text-end">{{ detail.owner_total_attendu|floatformat:0|intcomma }}</td>
-                        <td class="text-end text-success">{{ detail.owner_total_paye|floatformat:0|intcomma }}</td>
-                        <td class="text-end text-danger pe-3">{{ detail.owner_total_impaye|floatformat:0|intcomma }}</td>
-                    </tr>
-                </tfoot>
-            </table>
+    <!-- Tableau des résultats -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Historique des 12 derniers mois {% if proprietaire_filtre %}- {{ proprietaire_filtre.user.get_full_name }}{% endif %}</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Mois</th>
+                            <th class="text-end">Loyer Attendu</th>
+                            <th class="text-end">Loyer Payé</th>
+                            <th class="text-end">Loyer Impayé</th>
+                            {% if not proprietaire_filtre %}
+                            <th class="text-end">Taux Commission</th>
+                            {% endif %}
+                            <th class="text-end">Commission Agence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report_data %}
+                            <tr>
+                                <td>{{ row.month_str }}</td>
+                                <td class="text-end">{{ row.total_attendu|floatformat:0 }} Frcfa</td>
+                                <td class="text-end">{{ row.total_paye|floatformat:0 }} Frcfa</td>
+                                <td class="text-end">{{ row.total_impaye|floatformat:0 }} Frcfa</td>
+                                {% if not proprietaire_filtre %}
+                                <td class="text-end">{{ row.commission_rate|floatformat:2 }}%</td>
+                                {% endif %}
+                                <td class="text-end">{{ row.commission|floatformat:0 }} Frcfa</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="{% if not proprietaire_filtre %}6{% else %}5{% endif %}" class="text-center">Aucune donnée à afficher.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-primary">
+                            <th>Total sur 12 mois</th>
+                            <th class="text-end">{{ grand_total_attendu|floatformat:0 }} Frcfa</th>
+                            <th class="text-end">{{ grand_total_paye|floatformat:0 }} Frcfa</th>
+                            <th class="text-end">{{ grand_total_impaye|floatformat:0 }} Frcfa</th>
+                            {% if not proprietaire_filtre %}
+                            <th class="text-end">{{ grand_total_commission_rate|floatformat:2 }}%</th>
+                            {% endif %}
+                            <th class="text-end">{{ grand_total_commission|floatformat:0 }} Frcfa</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
 </div>
-{% endfor %}
-{% endblock  %}
+{% endblock %}
+
+{% block extra_js %}
+{# Ce bloc JavaScript n'est plus nécessaire car le téléchargement est géré par la soumission du formulaire. #}
+{% endblock %}

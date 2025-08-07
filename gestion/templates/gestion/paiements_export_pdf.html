@@ -1,0 +1,128 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export de tous les paiements</title>
+    <style>
+        @page {
+            size: A4 landscape; /* Use landscape for more columns */
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9pt; /* Smaller font for more data */
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header .logo {
+            max-width: 150px;
+            max-height: 70px;
+        }
+        .header .agency-info {
+            text-align: right;
+        }
+        .agency-info h2 {
+            margin: 0;
+            color: #0056b3;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 16pt;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 6px; /* smaller padding */
+            text-align: left;
+            word-wrap: break-word;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .footer {
+            position: fixed;
+            bottom: -1cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #888;
+        }
+        .text-success { color: #28a745; }
+        .text-warning { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if agence.logo %}
+            <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+        {% endif %}
+        <div class="agency-info">
+            <h2>{{ agence.user.get_full_name|default:agence.user.username }}</h2>
+            <p>{{ agence.user.addresse|linebreaksbr }}</p>
+            <p>Tel: {{ agence.user.telephone }} | Email: {{ agence.user.email }}</p>
+        </div>
+    </div>
+
+    <h1>Liste de tous les Paiements</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date Paiement</th>
+                <th class="text-right">Montant</th>
+                <th>Locataire</th>
+                <th>Immeuble / Unité</th>
+                <th>Mois Couvert</th>
+                <th>Statut</th>
+                <th>Moyen Paiement</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paiement in paiements %}
+            <tr>
+                <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                <td class="text-right">{{ paiement.montant|floatformat:0|intcomma }} Frcfa</td>
+                <td>{{ paiement.location.locataire }}</td>
+                <td>{{ paiement.location.chambre.immeuble.addresse|truncatewords:4 }} / {{ paiement.location.chambre.designation }}</td>
+                <td>{{ paiement.mois_couvert }}</td>
+                <td>
+                    {% if paiement.est_valide %}
+                        <span class="text-success">Validé</span>
+                    {% else %}
+                        <span class="text-warning">En attente</span>
+                    {% endif %}
+                </td>
+                <td>{{ paiement.moyen_paiement }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px;">Aucun paiement enregistré.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Rapport généré le {{ date_generation|date:"d/m/Y" }} par {{ agence.user.get_full_name }}.
+    </div>
+</body>
+</html>

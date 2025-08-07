@@ -1,0 +1,63 @@
+<div class="table-responsive">
+    <table class="table table-bordered" id="chambresTable" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Immeuble</th>
+                <th>Unité</th>
+                <th>Statut</th>
+                <th>Locataire</th>
+                <th class="text-end">Loyer</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chambre in chambres_page %}
+            <tr>
+                <td>{{ chambre.immeuble.addresse }}</td>
+                <td>{{ chambre.designation }}</td>
+                <td>
+                    {% if chambre.locataire %}
+                        <span class="badge bg-danger">Occupée</span>
+                    {% else %}
+                        <span class="badge bg-success">Libre</span>
+                    {% endif %}
+                </td>
+                <td>{{ chambre.locataire|default:"-" }}</td>
+                <td class="text-end">{{ chambre.prix_loyer|floatformat:0 }} Frcfa</td>
+                <td>
+                    <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-sm btn-info" title="Détails">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">Aucune unité à afficher pour ce filtre.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination pour les chambres -->
+{% if chambres_page.has_other_pages %}
+<nav aria-label="Pagination des chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
+    <ul class="pagination justify-content-center">
+        {% if chambres_page.has_previous %}
+            <li class="page-item"><a class="page-link" href="?chambres_page={{ chambres_page.previous_page_number }}&statut={{ statut_filter|default:'' }}&source=chambres">&laquo;</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+        {% endif %}
+
+        {% for i in chambres_page.paginator.page_range %}
+            <li class="page-item {% if chambres_page.number == i %}active{% endif %}"><a class="page-link" href="?chambres_page={{ i }}&statut={{ statut_filter|default:'' }}&source=chambres">{{ i }}</a></li>
+        {% endfor %}
+
+        {% if chambres_page.has_next %}
+            <li class="page-item"><a class="page-link" href="?chambres_page={{ chambres_page.next_page_number }}&statut={{ statut_filter|default:'' }}&source=chambres">&raquo;</a></li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

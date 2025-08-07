@@ -1,0 +1,47 @@
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Propriétaire</th>
+                <th class="text-center">Immeubles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for proprietaire in proprietaires_page %}
+            <tr>
+                <td>
+                    <strong>{{ proprietaire.user.get_full_name }}</strong><br>
+                    <small class="text-muted">{{ proprietaire.user.email }}</small>
+                </td>
+                <td class="text-center">{{ proprietaire.nombre_immeubles_proprietaire }}</td>
+                <td>
+                    <a href="{% url 'gestion:proprietaire_detail' proprietaire.user.pk %}" class="btn btn-sm btn-info" title="Détails">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="{% url 'gestion:modifier_proprietaire' proprietaire.user.pk %}" class="btn btn-sm btn-warning" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">Aucun propriétaire trouvé.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if proprietaires_page.has_other_pages %}
+<nav aria-label="Pagination des propriétaires" hx-target="#proprietaires-list-container" hx-swap="innerHTML" hx-push-url="true">
+    <ul class="pagination justify-content-center">
+        {% if proprietaires_page.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.previous_page_number }}&q_proprietaire={{ q_proprietaire|default:'' }}">&laquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&laquo;</span></li>{% endif %}
+        {% for i in proprietaires_page.paginator.page_range %}
+            <li class="page-item {% if proprietaires_page.number == i %}active{% endif %}"><a class="page-link" href="?page={{ i }}&q_proprietaire={{ q_proprietaire|default:'' }}">{{ i }}</a></li>
+        {% endfor %}
+        {% if proprietaires_page.has_next %}<li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.next_page_number }}&q_proprietaire={{ q_proprietaire|default:'' }}">&raquo;</a></li>{% else %}<li class="page-item disabled"><span class="page-link">&raquo;</span></li>{% endif %}
+    </ul>
+</nav>
+{% endif %}

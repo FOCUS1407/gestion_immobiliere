@@ -18,7 +18,7 @@
                     <form method="post" novalidate>
                         {% csrf_token %}
                         
-                        <p class="text-muted">Remplissez les informations ci-dessous pour créer le compte du propriétaire, son premier bien et les termes du contrat de gestion.</p>
+                        <p class="text-muted">Remplissez les informations ci-dessous pour créer le compte du propriétaire et les termes du contrat de gestion.</p>
                         <hr>
                         
                         {% if form.non_field_errors %}
@@ -37,13 +37,6 @@
                             <div class="col-md-6 mb-3">{{ form.telephone.label_tag }} {{ form.telephone }} {% for error in form.telephone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
                         </div>
                         <div class="mb-3">{{ form.addresse.label_tag }} {{ form.addresse }} {% for error in form.addresse.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                        
-                        <hr>
-
-                        <h5>Informations sur le premier bien</h5>
-                        <div class="mb-3">{{ form.bien_nom.label_tag }} {{ form.bien_nom }} {% for error in form.bien_nom.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                        <div class="mb-3">{{ form.bien_adresse.label_tag }} {{ form.bien_adresse }} {% for error in form.bien_adresse.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
-                        <div class="mb-3">{{ form.bien_description.label_tag }} {{ form.bien_description }} {% for error in form.bien_description.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}</div>
 
                         <hr>
 

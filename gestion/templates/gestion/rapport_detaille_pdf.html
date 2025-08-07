@@ -1,0 +1,174 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Détaillé des Loyers</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header .logo {
+            max-width: 150px;
+            max-height: 70px;
+        }
+        .header .agency-info {
+            text-align: right;
+        }
+        .agency-info h2 {
+            margin: 0;
+            color: #0056b3;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 18pt;
+            margin-bottom: 5px;
+        }
+        .report-subtitle {
+            text-align: center;
+            font-size: 12pt;
+            color: #666;
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .footer {
+            position: fixed;
+            bottom: -1cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 8pt;
+            color: #888;
+        }
+        .summary {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ccc;
+            width: 50%;
+            margin-left: 50%;
+        }
+        .summary table {
+            width: 100%;
+        }
+        .summary td {
+            border: none;
+            padding: 4px 8px;
+        }
+        .summary .label {
+            font-weight: bold;
+        }
+        .text-success {
+            color: #28a745;
+        }
+        .text-danger {
+            color: #dc3545;
+        }
+        .text-info {
+            color: #0056b3; /* Using a blue that fits the header */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if agence.logo %}
+            <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+        {% endif %}
+        <div class="agency-info">
+            <h2>{{ agence.user.get_full_name|default:agence.user.username }}</h2>
+            <p>{{ agence.user.addresse|linebreaksbr }}</p>
+            <p>Tel: {{ agence.user.telephone }} | Email: {{ agence.user.email }}</p>
+        </div>
+    </div>
+
+    <h1>Rapport Détaillé des Loyers</h1>
+    <p class="report-subtitle">
+        Mois de {{ mois_couvert_str }}
+        {% if proprietaire_filtre %}
+            <br>Pour le propriétaire : <strong>{{ proprietaire_filtre.user.get_full_name }}</strong>
+        {% endif %}
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Locataire</th>
+                <th>Immeuble / Unité</th>
+                <th class="text-right">Loyer Attendu</th>
+                <th class="text-right">Loyer Payé</th>
+                <th class="text-right">Reste à Payer</th>
+                <th>Date Paiement</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in monthly_rent_details %}
+            <tr>
+                <td>{{ detail.locataire }}</td>
+                <td>{{ detail.chambre.immeuble.addresse|truncatewords:4 }} / {{ detail.chambre.designation }}</td>
+                <td class="text-right">{{ detail.loyer_a_payer|floatformat:0|intcomma }} Frcfa</td>
+                <td class="text-right text-success">{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
+                <td class="text-right text-danger">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</td>
+                <td>{{ detail.date_paiement|date:"d/m/Y"|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px;">Aucune donnée de location à afficher pour cette période.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary">
+        <table>
+            <tbody>
+                <tr>
+                    <td class="label">Total Attendu :</td>
+                    <td class="text-right">{{ totals.attendu|floatformat:0|intcomma }} Frcfa</td>
+                </tr>
+                <tr>
+                    <td class="label text-success">Total Payé :</td>
+                    <td class="text-right text-success">{{ totals.paye|floatformat:0|intcomma }} Frcfa</td>
+                </tr>
+                <tr>
+                    <td class="label text-danger">Total Impayé :</td>
+                    <td class="text-right text-danger">{{ totals.impaye|floatformat:0|intcomma }} Frcfa</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        Rapport généré le {{ date_generation|date:"d/m/Y" }} par {{ agence.user.get_full_name }}.
+    </div>
+</body>
+</html>

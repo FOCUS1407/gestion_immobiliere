@@ -5,7 +5,8 @@ from .models import Agence, Proprietaire, Immeuble, TypeBien, Chambre, Locataire
 
 from django.core.exceptions import ValidationError
 from .validators import CustomPasswordValidator
-from django.core.management import call_command
+from decimal import Decimal
+from django.core.management import call_command 
 from unittest.mock import patch
 from datetime import date
 
@@ -34,6 +35,9 @@ class BaseTestCase(TestCase):
             last_name='Test'
         )
         
+        # Créer le profil Agence
+        cls.agence = Agence.objects.create(user=cls.agence_user)
+
         # Créer les profils associés
         cls.proprietaire = Proprietaire.objects.create(
             user=cls.proprietaire_user, 
@@ -509,3 +513,130 @@ class ChambreManagementTest(BaseTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
         self.assertTrue(Chambre.objects.filter(pk=self.chambre.pk).exists())
+
+class FinancialReportTest(BaseTestCase):
+    """Teste les vues de rapport financier."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # Créer des données pour le rapport
+        cls.locataire = Locataire.objects.create(agence=cls.agence, nom="Payeur", prenom="Bon")
+        cls.chambre = Chambre.objects.create(
+            immeuble=cls.immeuble, designation="Unité A", prix_loyer=Decimal('100000')
+        )
+        cls.moyen_paiement = MoyenPaiement.objects.create(designation=MoyenPaiement.ESPECES)
+        cls.location = Location.objects.create(
+            chambre=cls.chambre, locataire=cls.locataire, date_entree='2024-01-01', moyen_paiement=cls.moyen_paiement
+        )
+        cls.chambre.locataire = cls.locataire
+        cls.chambre.save()
+        
+        # Créer un paiement pour un mois spécifique
+        Paiement.objects.create(
+            location=cls.location, montant=Decimal('100000'), date_paiement='2024-08-05',
+            mois_couvert='Août 2024', moyen_paiement=cls.moyen_paiement, est_valide=True
+        )
+
+    def test_rapport_financier_view_loads_correctly(self):
+        """Vérifie que la vue du rapport financier s'affiche avec les bonnes données."""
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:rapport_financier') + '?mois=2024-08'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'gestion/rapport_financier.html')
+        
+        # Vérifier que les données du rapport sont bien dans le contexte après la correction
+        self.assertIn('report_details', response.context)
+        self.assertEqual(response.context['grand_total_paye'], Decimal('100000'))
+
+    def test_generer_rapport_financier_pdf_with_owner_filter(self):
+        """Vérifie que la génération du PDF du rapport financier fonctionne et que le nom du fichier est correct."""
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:generer_rapport_financier_pdf') + f'?mois=2024-08&proprietaire_id={self.proprietaire.pk}'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        
+        # Le nom du propriétaire est "Proprio Test"
+        expected_filename = 'rapport_financier_Proprio_Test_2024-08.pdf'
+        self.assertIn(f'attachment; filename="{expected_filename}"', response['Content-Disposition'])
+
+    @patch('gestion.views.HTML')
+    def test_rapport_financier_pdf_content_shows_filtered_owner(self, mock_html):
+        """Vérifie que le nom du propriétaire filtré apparaît dans le contenu HTML du PDF."""
+        mock_html.return_value.write_pdf.return_value = b'fake-pdf-content'
+
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:generer_rapport_financier_pdf') + f'?mois=2024-08&proprietaire_id={self.proprietaire.pk}'
+        self.client.get(url)
+
+        # Récupérer le HTML qui aurait été rendu en PDF
+        html_content = mock_html.call_args[1]['string']
+
+        # Vérifier que le nom du propriétaire est bien présent dans le titre
+        self.assertIn(f"Rapport pour le propriétaire : {self.proprietaire_user.get_full_name()}", html_content)
+
+    @patch('gestion.views.HTML')
+    def test_rapport_financier_pdf_content_no_owner_filter(self, mock_html):
+        """Vérifie que le nom du propriétaire n'apparaît pas si aucun filtre n'est appliqué."""
+        mock_html.return_value.write_pdf.return_value = b'fake-pdf-content'
+
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:generer_rapport_financier_pdf') + '?mois=2024-08'
+        self.client.get(url)
+
+        html_content = mock_html.call_args[1]['string']
+
+        # Vérifier que la mention du propriétaire est absente
+        self.assertNotIn("Rapport pour le propriétaire", html_content)
+
+    @patch('gestion.views.HTML')
+    def test_rapport_financier_pdf_content_adapts_when_filtered(self, mock_html):
+        """Vérifie que les titres du PDF s'adaptent lorsqu'un filtre propriétaire est appliqué."""
+        mock_html.return_value.write_pdf.return_value = b'fake-pdf-content'
+
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:generer_rapport_financier_pdf') + f'?mois=2024-08&proprietaire_id={self.proprietaire.pk}'
+        self.client.get(url)
+
+        html_content = mock_html.call_args[1]['string']
+
+        # Le titre h2 de la section propriétaire doit être absent car redondant
+        self.assertNotIn(f"<h2>Propriétaire : {self.proprietaire_user.get_full_name()}</h2>", html_content)
+        # La section de résumé général doit être absente car les totaux sont déjà dans le tableau principal
+        self.assertNotIn('<div class="grand-total-section">', html_content)
+
+    @patch('gestion.views.HTML')
+    def test_rapport_financier_pdf_content_shows_all_titles_when_not_filtered(self, mock_html):
+        """Vérifie que les titres par défaut sont présents quand aucun filtre n'est appliqué."""
+        mock_html.return_value.write_pdf.return_value = b'fake-pdf-content'
+
+        self.client.login(username='agence_test', password='password123')
+        url = reverse('gestion:generer_rapport_financier_pdf') + '?mois=2024-08'
+        self.client.get(url)
+
+        html_content = mock_html.call_args[1]['string']
+
+        # Le titre h2 de la section propriétaire doit être présent car il n'y a pas de filtre global
+        self.assertIn(f"<h2>Propriétaire : {self.proprietaire_user.get_full_name()}</h2>", html_content)
+        # La section de résumé général doit être présente
+        self.assertIn('<div class="grand-total-section">', html_content)
+
+    def test_proprietaire_can_download_own_report(self):
+        """Vérifie qu'un propriétaire connecté peut télécharger son propre rapport PDF."""
+        # Connexion en tant que propriétaire
+        self.client.login(username='proprio_test', password='password123')
+        
+        # L'URL n'a pas besoin de paramètres, la vue identifie l'utilisateur
+        url = reverse('gestion:generer_rapport_financier_pdf')
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        
+        # Vérifier que le nom du fichier est correct pour le propriétaire connecté
+        expected_filename = 'rapport_historique_Proprio_Test.pdf'
+        self.assertIn(f'attachment; filename="{expected_filename}"', response['Content-Disposition'])

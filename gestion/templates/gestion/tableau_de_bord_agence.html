@@ -1,240 +1,164 @@
-{% extends 'gestion/base.html' %}
-{% load humanize %}
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Tableau de Bord Agence{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Tableau de bord de l'Agence</h1>
-
-    <p class="lead">Bienvenue, {{ user.username }} !</p>
-
-    <!-- Résumé Financier du Mois en cours -->
-    <h3 class="mt-4 mb-3">Résumé Financier de {{ current_month_display }}</h3>
-    <div class="row mb-2">
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-primary h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total Attendu</h6>
-                    <h4 class="card-text">{{ total_attendu_mois|floatformat:0|intcomma }} Frcfa</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total Payé</h6>
-                    <h4 class="card-text">{{ total_paye_mois|floatformat:0|intcomma }} Frcfa</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-danger h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total Impayé</h6>
-                    <h4 class="card-text">{{ total_impaye_mois|floatformat:0|intcomma }} Frcfa</h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-dark bg-warning h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Commission Agence</h6>
-                    <h4 class="card-text">{{ commission_mois|floatformat:0|intcomma }} Frcfa</h4>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="text-end mb-4">
-        <a href="{% url 'gestion:rapport_financier' %}" class="btn btn-outline-primary">Voir le rapport financier détaillé <i class="fas fa-arrow-right ms-2"></i></a>
-    </div>
-
-    <hr class="my-4">
-
-    <h3>Statistiques Globales</h3>
-    <div class="row">
-        <!-- Statistiques globales -->
-        <div class="col-md-4">
-            <div class="card text-white bg-dark mb-3">
-                <div class="card-header">Immeubles Gérés</div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ nombre_immeubles }}</h5>
-                    <p class="card-text">Total des propriétés sous gestion.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-header">Propriétaires Gérés</div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ nombre_proprietaires }}</h5>
-                    <p class="card-text">Total des propriétaires sous contrat.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-info mb-3">
-                <div class="card-header">Taux d'occupation</div>
-                <div class="card-body">
-                    <h5 class="card-title">{{ occupancy_rate|floatformat:0 }}%</h5>
-                    <p class="card-text">Pourcentage des biens actuellement loués.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <hr class="my-4">
-
-    <!-- Liste des propriétaires gérés -->
-    <h3>Propriétaires sous contrat ({{ nombre_proprietaires }})</h3>
-    {% if proprietaires_page.object_list %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">Nom</th>
-                        <th scope="col">Email</th>
-                        <th scope="col">Téléphone</th>
-                        <th scope="col">Immeubles</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in proprietaires_page %}
-                    <tr>
-                        <td>{{ p.user.get_full_name|default:p.user.username }}</td>
-                        <td>{{ p.user.email }}</td>
-                        <td>{{ p.user.telephone }}</td>
-                        <td>{{ p.nombre_immeubles_proprietaire }}</td>
-                        <td>
-                            <a href="{% url 'gestion:proprietaire_detail' p.user.pk %}" class="btn btn-sm btn-outline-primary">Voir le profil</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                {% if proprietaires_page.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ proprietaires_page.previous_page_number }}">Précédent</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
-                {% endif %}
-
-                {% for i in proprietaires_page.paginator.page_range %}
-                    {% if proprietaires_page.number == i %}
-                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
-                    {% else %}
-                        <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if proprietaires_page.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.next_page_number }}">Suivant</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
-                {% endif %}
-            </ul>
-        </nav>
-    {% else %}
-        <p>Vous ne gérez aucun propriétaire pour le moment.</p>
-    {% endif %}
-
-    <hr class="my-4">
-
-    <!-- Liste des biens gérés -->
-    <h3>Immeubles sous gestion ({{ nombre_immeubles }})</h3>
-    {% if immeubles %}
-        <div class="list-group">
-        {% for immeuble in immeubles %}
-            <a href="{% url 'gestion:immeuble_detail' immeuble.pk %}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">{{ immeuble.addresse|truncatewords:10 }}</h5>
-                    <small>Propriétaire : {{ immeuble.proprietaire.user.get_full_name|default:immeuble.proprietaire.user.username }}</small>
-                </div>
-                <p class="mb-1">Type: {{ immeuble.type_bien }}</p>
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Tableau de Bord Agence</h1>
+        <div>
+            <a href="{% url 'gestion:gerer_locataires' %}" class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm me-2">
+                <i class="fas fa-users fa-sm text-white-50"></i> Gérer les locataires
             </a>
-        {% endfor %}
+            <a href="{% url 'gestion:ajouter_proprietaire' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
+                    class="fas fa-user-plus fa-sm text-white-50"></i> Ajouter un Propriétaire</a>
         </div>
-    {% else %}
-        <p>Vous ne gérez aucun immeuble pour le moment.</p>
-    {% endif %}
-
-    <hr class="my-4">
-
-    <!-- Unités locatives gérées -->
-    <h3>Unités locatives ({{ total_units }})</h3>
-    {% if chambres_page.object_list %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Désignation</th>
-                        <th>Immeuble</th>
-                        <th>Loyer</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for chambre in chambres_page %}
-                    <tr>
-                        <td>{{ chambre.designation }}</td>
-                        <td>{{ chambre.immeuble.addresse|truncatechars:30 }}</td>
-                        <td>{{ chambre.prix_loyer }} Frcfa</td>
-                        <td>
-                            {% if chambre.locataire %}
-                                <span class="badge bg-danger">Occupée</span> par {{ chambre.locataire.prenom }} {{ chambre.locataire.nom }}
-                            {% else %}
-                                <span class="badge bg-success">Libre</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'gestion:chambre_detail' chambre.pk %}" class="btn btn-sm btn-outline-primary">Gérer</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <!-- Pagination pour les chambres -->
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                {% if chambres_page.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ chambres_page.previous_page_number }}">Précédent</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
-                {% endif %}
-
-                {% for i in chambres_page.paginator.page_range %}
-                    {% if chambres_page.number == i %}
-                        <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
-                    {% else %}
-                        <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ i }}">{{ i }}</a></li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if chambres_page.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ proprietaires_page.number }}&chambres_page={{ chambres_page.next_page_number }}">Suivant</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
-                {% endif %}
-            </ul>
-        </nav>
-    {% else %}
-        <p>Aucune unité locative trouvée.</p>
-    {% endif %}
-
-    <hr class="my-4">
-
-    <!-- Actions rapides -->
-    <h3>Actions Rapides</h3>
-    <div class="list-group">
-        <a href="{% url 'gestion:ajouter_proprietaire' %}" class="list-group-item list-group-item-action active bg-success border-success">Ajouter un nouveau propriétaire</a>
-        <a href="{% url 'gestion:gerer_locataires' %}" class="list-group-item list-group-item-action">Gérer les locataires</a>
-        <a href="{% url 'gestion:profil' %}" class="list-group-item list-group-item-action">Modifier mon profil</a>
     </div>
+
+    <!-- Content Row (Widgets) -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Loyer Attendu ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_attendu_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-calendar fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Loyer Payé ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_paye_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Taux d'occupation
+                            </div>
+                            <div class="row no-gutters align-items-center">
+                                <div class="col-auto">
+                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ occupancy_rate|floatformat:2 }}%</div>
+                                </div>
+                                <div class="col">
+                                    <div class="progress progress-sm mr-2">
+                                        <div class="progress-bar bg-info" role="progressbar"
+                                            style="width: {{ occupancy_rate }}%" aria-valuenow="{{ occupancy_rate }}" aria-valuemin="0"
+                                            aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-clipboard-list fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Propriétaires Gérés</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ nombre_proprietaires }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-users fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Section Gestion des Propriétaires -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Gestion des Propriétaires</h6>
+                </div>
+                <div class="card-body">
+                    <form hx-get="{% url 'gestion:tableau_de_bord_agence' %}" 
+                          hx-target="#proprietaires-list-container" 
+                          hx-swap="innerHTML"
+                          hx-push-url="true"
+                          class="mb-3">
+                        <div class="input-group">
+                            <input type="search" name="q_proprietaire" class="form-control" placeholder="Rechercher un propriétaire..." value="{{ q_proprietaire }}">
+                            <button class="btn btn-outline-primary" type="submit">Rechercher</button>
+                        </div>
+                    </form>
+                    <div id="proprietaires-list-container">
+                        {% include "gestion/partials/_proprietaires_list.html" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Gestion des Unités -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Statut des Unités</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 btn-group" role="group">
+                        <a href="?statut=&source=chambres" class="btn {% if not statut_filter %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                           hx-get="?statut=&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
+                            Toutes ({{ total_units }})
+                        </a>
+                        <a href="?statut=libre&source=chambres" class="btn {% if statut_filter == 'libre' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                           hx-get="?statut=libre&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
+                            Libres ({{ free_units }})
+                        </a>
+                        <a href="?statut=occupee&source=chambres" class="btn {% if statut_filter == 'occupee' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                           hx-get="?statut=occupee&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
+                            Occupées ({{ occupied_units }})
+                        </a>
+                    </div>
+                    <div id="chambres-list-container">
+                        {% include "gestion/partials/_chambres_list.html" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row for Financial Report -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Aperçu du Rapport Financier</h6>
+                    <div>
+                        <a href="{% url 'gestion:rapport_detaille_loyers' %}" class="btn btn-sm btn-outline-info me-2">Voir détail des loyers</a>
+                        <a href="{% url 'gestion:rapport_financier' %}" class="btn btn-sm btn-outline-primary">Voir le rapport complet</a>
+                    </div>
+                </div>
+                <div class="card-body" id="financial-report-container">
+                    {% include "gestion/partials/_financial_report_table.html" %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -1,0 +1,56 @@
+<!-- Formulaire de filtre pour le rapport financier -->
+<form hx-get="{% url 'gestion:tableau_de_bord_agence' %}" 
+      hx-target="#financial-report-container" 
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      class="mb-3">
+    <input type="hidden" name="source" value="financial_report">
+    <div class="row align-items-end">
+        <div class="col-md-5">
+            <label for="proprietaire_id_report" class="form-label small">Filtrer par propriétaire</label>
+            <select name="proprietaire_id" id="proprietaire_id_report" class="form-select form-select-sm">
+                <option value="">Tous les propriétaires</option>
+                {% for p in all_proprietaires %}
+                    <option value="{{ p.pk }}" {% if p.pk == selected_owner_id %}selected{% endif %}>
+                        {{ p.user.get_full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="mois_report" class="form-label small">Mois du rapport</label>
+            <input type="month" name="mois" id="mois_report" class="form-control form-control-sm" value="{{ selected_month_str }}">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100">Actualiser le rapport</button>
+        </div>
+    </div>
+</form>
+
+<!-- Tableau des résultats du rapport financier -->
+<div class="table-responsive">
+    <table class="table table-bordered" width="100%" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Propriétaire</th>
+                <th class="text-end">Loyer Attendu</th>
+                <th class="text-end">Loyer Payé</th>
+                <th class="text-end">Commission</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in report_details %}
+                <tr>
+                    <td>{{ detail.proprietaire.user.get_full_name }}</td>
+                    <td class="text-end">{{ detail.owner_total_attendu|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ detail.owner_total_paye|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ detail.commission|floatformat:0 }} Frcfa</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">Aucune donnée à afficher pour les filtres sélectionnés.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

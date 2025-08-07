@@ -1,0 +1,46 @@
+<div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Immeubles</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <!-- La cible pour la mise à jour HTMX -->
+        <tbody id="proprietaires-list">
+            <!-- Le contenu initial est chargé via un include -->
+            {% include "gestion/partials/_proprietaires_list.html" %}
+        </tbody>
+    </table>
+</div>
+
+{% if proprietaires_page.has_other_pages %}
+<div class="card-footer">
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mb-0">
+            {% if proprietaires_page.has_previous %}
+                <li class="page-item"><a class="page-link" hx-get="?page={{ proprietaires_page.previous_page_number }}&amp;chambres_page={{ chambres_page.number }}{% if statut_filter %}&amp;statut={{ statut_filter }}{% endif %}{% if q_proprietaire %}&amp;q_proprietaire={{ q_proprietaire }}{% endif %}&amp;source=proprietaires" hx-target="#proprietaires-table-wrapper" hx-swap="outerHTML">Précédent</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+            {% endif %}
+
+            {% for i in proprietaires_page.paginator.page_range %}
+                {% if proprietaires_page.number == i %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ i }}</span></li>
+                {% else %}
+                    <li class="page-item"><a class="page-link" hx-get="?page={{ i }}&amp;chambres_page={{ chambres_page.number }}{% if statut_filter %}&amp;statut={{ statut_filter }}{% endif %}{% if q_proprietaire %}&amp;q_proprietaire={{ q_proprietaire }}{% endif %}&amp;source=proprietaires" hx-target="#proprietaires-table-wrapper" hx-swap="outerHTML">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if proprietaires_page.has_next %}
+                <li class="page-item"><a class="page-link" hx-get="?page={{ proprietaires_page.next_page_number }}&amp;chambres_page={{ chambres_page.number }}{% if statut_filter %}&amp;statut={{ statut_filter }}{% endif %}{% if q_proprietaire %}&amp;q_proprietaire={{ q_proprietaire }}{% endif %}&amp;source=proprietaires" hx-target="#proprietaires-table-wrapper" hx-swap="outerHTML">Suivant</a></li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
