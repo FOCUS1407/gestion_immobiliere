@@ -121,22 +121,9 @@
                     <h6 class="m-0 font-weight-bold text-primary">Statut des Unités</h6>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3 btn-group" role="group">
-                        <a href="?statut=&source=chambres" class="btn {% if not statut_filter %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                           hx-get="?statut=&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
-                            Toutes ({{ total_units }})
-                        </a>
-                        <a href="?statut=libre&source=chambres" class="btn {% if statut_filter == 'libre' %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                           hx-get="?statut=libre&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
-                            Libres ({{ free_units }})
-                        </a>
-                        <a href="?statut=occupee&source=chambres" class="btn {% if statut_filter == 'occupee' %}btn-primary{% else %}btn-outline-primary{% endif %}"
-                           hx-get="?statut=occupee&source=chambres" hx-target="#chambres-list-container" hx-swap="innerHTML" hx-push-url="true">
-                            Occupées ({{ occupied_units }})
-                        </a>
-                    </div>
-                    <div id="chambres-list-container">
-                        {% include "gestion/partials/_chambres_list.html" %}
+                    <!-- Ce conteneur est maintenant la cible pour les mises à jour HTMX -->
+                    <div id="unit-status-wrapper">
+                        {% include "gestion/partials/_unit_status_wrapper.html" %}
                     </div>
                 </div>
             </div>

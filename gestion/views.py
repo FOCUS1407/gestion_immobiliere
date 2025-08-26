@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.db import transaction, IntegrityError, models
-from django.db.models import Sum, Count, Q, F, DecimalField
+from django.db.models import Sum, Count, Q, F, DecimalField, OuterRef, Exists
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
@@ -20,7 +20,7 @@ import string
 import random
 from django.urls import reverse
 import csv
-from gestion.forms import AgenceProfileForm, ChambreForm, EtatDesLieuxForm, ImmeubleForm, LocataireForm, LocationForm, LoginForm, MoyenPaiementForm, PaiementForm, ProprietaireCreationForm, ProprietaireProfileUpdateForm, RegisterForm, UserUpdateForm
+from gestion.forms import AgenceProfileForm, AgenceRegistrationForm, ChambreForm, ConnexionForm, EtatDesLieuxForm, ImmeubleForm, LocataireForm, LocationForm, MoyenPaiementForm, PaiementForm, ProprietaireCreationForm, ProprietaireProfileUpdateForm, UserUpdateForm
 from gestion.models import Agence, CustomUser, EtatDesLieux, Locataire, Location, MoyenPaiement, Notification, Paiement, Proprietaire, Immeuble,Chambre
 
 try:
@@ -31,21 +31,7 @@ except ImportError:
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
-
 User = get_user_model()
-
-def accueil(request):
-    """
-    Affiche la page d'accueil.
-    Redirige les utilisateurs déjà connectés vers leur tableau de bord.
-    """
-    if request.user.is_authenticated:
-        if request.user.user_type == 'AG':
-            return redirect('gestion:tableau_de_bord_agence')
-        else: # 'PR'
-            return redirect('gestion:tableau_de_bord_proprietaire')
-            
-    return render(request, 'gestion/accueil.html')
 
 def connexion(request):
     """
@@ -59,7 +45,7 @@ def connexion(request):
             return redirect('gestion:tableau_de_bord_proprietaire')
 
     if request.method == 'POST':
-        form = LoginForm(request, data=request.POST)
+        form = ConnexionForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
@@ -72,7 +58,7 @@ def connexion(request):
         else:
             messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
     else:
-        form = LoginForm()
+        form = ConnexionForm()
     return render(request, 'gestion/connexion.html', {'form': form})
 
 def logout_view(request):
@@ -83,30 +69,41 @@ def logout_view(request):
     messages.info(request, "Vous avez été déconnecté avec succès.")
     return redirect('gestion:accueil')
 
-def register(request):
+@transaction.atomic # Assure que la création de l'utilisateur et de l'agence se fait en une seule fois
+def register_view(request):
     """
-    Gère l'inscription des utilisateurs avec un formulaire Django.
+    Gère l'inscription des nouvelles agences avec un formulaire simplifié.
+    Le nom d'utilisateur est généré automatiquement à partir de l'email.
     """
     if request.user.is_authenticated:
-        return redirect('gestion:accueil')
+        if request.user.user_type == 'AG':
+            return redirect('gestion:tableau_de_bord_agence')
+        return redirect('gestion:tableau_de_bord_proprietaire')
 
     if request.method == 'POST':
-        form = RegisterForm(request.POST)
+        form = AgenceRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, "Votre compte a été créé avec succès !")
+            with transaction.atomic():
+                user = form.save(commit=False)
+                
+                # --- Génération automatique du nom d'utilisateur ---
+                # On utilise l'email comme nom d'utilisateur, car il est unique.
+                user.username = form.cleaned_data['email']
+                
+                user.user_type = CustomUser.AGENCE
+                user.set_password(form.cleaned_data['password'])
+                user.save()
+
+                Agence.objects.create(user=user)
+
+            messages.success(request, "Votre compte agence a été créé avec succès !")
 
             # --- Envoi de l'email de bienvenue ---
             try:
-                subject = "Bienvenue sur RentSolution !"
+                subject = render_to_string('gestion/email/welcome_user_subject.txt').strip()
                 login_url = request.build_absolute_uri(reverse('gestion:connexion'))
                 
-                email_context = {
-                    'user': user,
-                    'login_url': login_url,
-                }
-                
+                email_context = { 'user': user, 'login_url': login_url }
                 html_body = render_to_string('gestion/email/welcome_user_body.html', email_context)
 
                 send_mail(
@@ -115,15 +112,15 @@ def register(request):
                     fail_silently=False,
                 )
             except Exception as email_error:
-                messages.warning(request, f"Votre compte a été créé, mais l'envoi de l'email de confirmation a échoué : {email_error}")
+                messages.warning(request, f"Votre compte a été créé, mais l'envoi de l'email de bienvenue a échoué : {email_error}")
 
-            if user.user_type == 'AG':
-                return redirect('gestion:tableau_de_bord_agence')
-            else:
-                return redirect('gestion:tableau_de_bord_proprietaire')
+            login(request, user)
+            return redirect('gestion:tableau_de_bord_agence')
     else:
-        form = RegisterForm()
+        form = AgenceRegistrationForm()
+    
     return render(request, 'gestion/register.html', {'form': form})
+
 
 def terms_of_service_view(request):
     """Affiche la page des conditions d'utilisation."""
@@ -170,30 +167,34 @@ def _get_financial_summary(agence_profil, month_str):
     }
 
 def _get_occupancy_stats(agence_profil):
-    """Calcule les statistiques d'occupation pour l'agence en une seule requête."""
+    """Calcule les statistiques d'occupation pour l'agence en une seule requête, en utilisant la source de vérité (Location)."""
     if not agence_profil:
         return {
             'total_units': 0,
             'occupied_units': 0,
+            'free_units': 0,
             'occupancy_rate': 0,
         }
 
     # Utilise une seule requête d'agrégation pour plus d'efficacité
+    # La logique est maintenant cohérente avec le filtrage du tableau de bord.
     stats = Chambre.objects.filter(
         immeuble__proprietaire__agence=agence_profil
     ).aggregate(
-        total_units=Count('id'),
-        occupied_units=Count('id', filter=Q(locataire__isnull=False))
+        total_units=Count('id', distinct=True),
+        occupied_units=Count('id', filter=Q(locations__date_sortie__isnull=True), distinct=True)
     )
     
     total_units = stats.get('total_units', 0)
     occupied_units = stats.get('occupied_units', 0)
+    free_units = total_units - occupied_units
 
     occupancy_rate = (occupied_units / total_units) * 100 if total_units > 0 else 0
 
     return {
         'total_units': total_units,
         'occupied_units': occupied_units,
+        'free_units': free_units,
         'occupancy_rate': occupancy_rate,
     }
 
@@ -285,6 +286,18 @@ def _get_financial_report_context(agence, selected_owner_id, selected_month_str)
         'grand_total_attendu': grand_total_attendu, 'grand_total_paye': grand_total_paye, 'grand_total_impaye': grand_total_impaye,
         'grand_total_commission': grand_total_commission,
     }
+
+def _check_agence_permission(user, chambre):
+    """
+    Fonction d'aide pour vérifier si un utilisateur est une agence 
+    et si elle gère bien la chambre spécifiée.
+    """
+    if user.user_type != 'AG':
+        return False
+    try:
+        return chambre.immeuble.proprietaire.agence == user.agence
+    except (User.agence.RelatedObjectDoesNotExist, Proprietaire.DoesNotExist):
+        return False
 
 def _get_monthly_financial_report(agence, proprietaire_id=None, num_months=12):
     """
@@ -404,7 +417,6 @@ def tableau_de_bord_agence(request):
     # Utilisation des fonctions d'aide pour des calculs optimisés
     financial_summary = _get_financial_summary(agence_profil, current_month_display)
     occupancy_stats = _get_occupancy_stats(agence_profil)
-    free_units = occupancy_stats.get('total_units', 0) - occupancy_stats.get('occupied_units', 0)
 
     # --- Liste des chambres (avec pagination) ---
     all_chambres_list = Chambre.objects.filter(
@@ -412,15 +424,42 @@ def tableau_de_bord_agence(request):
     ).select_related('immeuble', 'locataire').order_by('immeuble__addresse', 'designation')
 
     # Appliquer le filtre de statut
-    statut_filter = request.GET.get('statut')
-    if statut_filter == 'occupee':
-        all_chambres_list = all_chambres_list.filter(locataire__isnull=False)
-    elif statut_filter == 'libre':
-        all_chambres_list = all_chambres_list.filter(locataire__isnull=True)
+    # On donne une valeur par défaut pour rendre la logique plus claire. 'toutes' est notre cas par défaut.
+    statut_filter = request.GET.get('statut', 'toutes')
+    
+    if statut_filter in ['occupee', 'libre']:
+        # AMÉLIORATION : On utilise une sous-requête avec Exists() pour une méthode de
+        # filtrage plus moderne et robuste, qui évite les effets de bord potentiels
+        # de la méthode Count() avec GROUP BY.
+        active_location_exists = Location.objects.filter(
+            chambre_id=OuterRef('pk'),
+            date_sortie__isnull=True
+        )
+        all_chambres_list = all_chambres_list.annotate(is_occupied=Exists(active_location_exists))
+        
+        if statut_filter == 'occupee':
+            all_chambres_list = all_chambres_list.filter(is_occupied=True)
+        else: # 'libre'
+            all_chambres_list = all_chambres_list.filter(is_occupied=False)
 
+    # --- OPTIMISATION : Pré-charger les locations actives pour éviter les requêtes N+1 ---
+    # 1. Récupérer toutes les locations actives pour l'agence en une seule requête
+    active_locations = Location.objects.filter(
+        chambre__immeuble__proprietaire__agence=agence_profil,
+        date_sortie__isnull=True
+    ).select_related('locataire')
+    
+    # 2. Créer un dictionnaire pour un accès rapide : {chambre_id: location_object}
+    location_map = {location.chambre_id: location for location in active_locations}
+
+    # 3. Paginer la liste des chambres
     paginator_chambres = Paginator(all_chambres_list, 5)
     chambres_page_number = request.GET.get('chambres_page')
     chambres_page = paginator_chambres.get_page(chambres_page_number)
+
+    # 4. Attacher la location active à chaque chambre de la page courante
+    for chambre in chambres_page:
+        chambre.active_location = location_map.get(chambre.id)
 
     # Calcul du total impayé
     total_impaye_mois = financial_summary['total_attendu'] - financial_summary['total_paye']
@@ -432,7 +471,8 @@ def tableau_de_bord_agence(request):
         'all_proprietaires': all_proprietaires_list, # Pour les filtres, si nécessaire
         'q_proprietaire': q_proprietaire, # Pour pré-remplir le champ de recherche
         # Données des chambres
-        'chambres_page': chambres_page,
+        'chambres': chambres_page,
+        'page_obj': chambres_page,
         # Données financières
         'current_month_display': current_month_display,
         'total_attendu_mois': financial_summary['total_attendu'],
@@ -441,8 +481,8 @@ def tableau_de_bord_agence(request):
         'total_impaye_mois': total_impaye_mois,
         # Statistiques d'occupation
         **occupancy_stats,
-        'free_units': free_units,
         'statut_filter': statut_filter, # Pour l'état actif des boutons
+        'today': timezone.now(),
     }
 
     # --- Nouveau: Données pour le rapport financier détaillé ---
@@ -459,10 +499,20 @@ def tableau_de_bord_agence(request):
     # Si la requête est une requête HTMX, on ne renvoie que le fragment de template
     if request.headers.get('HX-Request'):
         source = request.GET.get('source')
+
+        # Logique de robustesse : si des filtres spécifiques aux unités sont présents
+        # (statut ou pagination des chambres), on déduit que la source est la liste 
+        # des unités, même si le paramètre 'source' est manquant.
+        if not source and ('statut' in request.GET or 'chambres_page' in request.GET):
+            source = 'chambres'
+
         if source == 'financial_report':
             return render(request, 'gestion/partials/_financial_report_table.html', context)
         elif source == 'chambres':
-            return render(request, 'gestion/partials/_chambres_list.html', context)
+            # Le contexte est maintenant correct pour le partiel des chambres
+            # Il contient 'chambres', 'page_obj', et 'today'.
+            # Et chaque 'chambre' a l'attribut 'active_location'.
+            return render(request, 'gestion/partials/_unit_status_wrapper.html', context)
         # Par défaut (ou si source == 'proprietaires'), on met à jour la table des propriétaires
         else:
             # On renvoie le partiel qui ne contient que les lignes (<tr>) du tableau,
@@ -607,6 +657,9 @@ def tableau_de_bord_proprietaire(request):
     except locale.Error:
         locale.setlocale(locale.LC_TIME, '')
     current_month_display = timezone.now().strftime('%B %Y').capitalize()
+    now = timezone.now()
+    start_of_month = now.date().replace(day=1)
+    end_of_month = start_of_month + relativedelta(months=1, days=-1)
 
     try:
         proprietaire_profil = request.user.proprietaire
@@ -615,10 +668,11 @@ def tableau_de_bord_proprietaire(request):
 
         # --- Calcul du résumé financier et du rapport détaillé pour le mois en cours ---
         if nombre_immeubles > 0:
-            # 1. Récupérer toutes les locations actives pour ce propriétaire
+            # 1. Récupérer toutes les locations actives pour ce propriétaire PENDANT le mois en cours
             locations_actives = Location.objects.filter(
-                chambre__immeuble__proprietaire=proprietaire_profil,
-                date_sortie__isnull=True
+                Q(chambre__immeuble__proprietaire=proprietaire_profil) &
+                Q(date_entree__lte=end_of_month) &
+                (Q(date_sortie__isnull=True) | Q(date_sortie__gte=start_of_month))
             ).select_related('chambre', 'locataire')
 
             # 2. Récupérer les paiements du mois pour ces locations
@@ -1015,6 +1069,96 @@ def locataire_detail(request, pk):
     return render(request, 'gestion/locataire_detail.html', context)
 
 @login_required
+def historique_paiement_locataire(request, locataire_id):
+    """
+    Affiche l'historique complet de tous les paiements pour un locataire, avec pagination.
+    """
+    # 1. Vérification de sécurité : l'utilisateur doit être une agence
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seules les agences peuvent accéder à cette page.")
+
+    # 2. Récupération des objets et vérification des permissions
+    locataire = get_object_or_404(Locataire, pk=locataire_id)
+    try:
+        if locataire.agence != request.user.agence:
+            raise PermissionDenied("Vous ne gérez pas ce locataire.")
+    except User.agence.RelatedObjectDoesNotExist:
+        raise PermissionDenied("Votre profil d'agence est incomplet.")
+
+    # 3. Récupérer tous les paiements pour toutes les locations de ce locataire
+    paiements_list = Paiement.objects.filter(
+        location__locataire=locataire
+    ).select_related(
+        'location__chambre__immeuble',
+        'moyen_paiement'
+    ).order_by('-date_paiement') # Les plus récents en premier
+
+    # 4. Pagination
+    paginator = Paginator(paiements_list, 15) # 15 paiements par page
+    page_number = request.GET.get('page')
+    paiements_page = paginator.get_page(page_number)
+
+    context = {
+        'locataire': locataire,
+        'paiements_page': paiements_page,
+        'page_title': f"Historique des paiements de {locataire}",
+    }
+    return render(request, 'gestion/historique_paiement_locataire.html', context)
+
+@login_required
+def historique_paiement_locataire_mois(request, locataire_id, year, month):
+    """
+    Affiche le détail du paiement d'un locataire pour un mois et une année spécifiques.
+    """
+    # 1. Vérification de sécurité : l'utilisateur doit être une agence
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seules les agences peuvent accéder à cette page.")
+
+    # 2. Récupération des objets et vérification des permissions
+    locataire = get_object_or_404(Locataire, pk=locataire_id)
+    try:
+        if locataire.agence != request.user.agence:
+            raise PermissionDenied("Vous ne gérez pas ce locataire.")
+    except User.agence.RelatedObjectDoesNotExist:
+        raise PermissionDenied("Votre profil d'agence est incomplet.")
+
+    # 3. Déterminer le mois et construire la chaîne 'mois_couvert'
+    try:
+        target_date = datetime(year, month, 1)
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+        mois_couvert_str = target_date.strftime('%B %Y').capitalize()
+    except (ValueError, locale.Error):
+        messages.error(request, "Date invalide.")
+        return redirect('gestion:gerer_locataires')
+
+    # 4. Trouver la location active durant ce mois
+    start_of_month = target_date.date()
+    end_of_month = (start_of_month + relativedelta(months=1, days=-1))
+    
+    location = Location.objects.filter(
+        Q(locataire=locataire) &
+        Q(date_entree__lte=end_of_month) &
+        (Q(date_sortie__isnull=True) | Q(date_sortie__gte=start_of_month))
+    ).select_related('chambre__immeuble').first()
+
+    # 5. Trouver le paiement pour cette location et ce mois
+    paiement = None
+    if location:
+        paiement = Paiement.objects.filter(
+            location=location,
+            mois_couvert=mois_couvert_str
+        ).first()
+
+    context = {
+        'locataire': locataire,
+        'location': location,
+        'paiement': paiement,
+        'mois_couvert_str': mois_couvert_str,
+        'page_title': f"Paiement de {locataire} pour {mois_couvert_str}",
+    }
+    return render(request, 'gestion/historique_paiement_locataire_mois.html', context)
+
+@login_required
 def modifier_locataire(request, pk):
     """
     Gère la modification des informations d'un locataire.
@@ -1305,14 +1449,7 @@ def chambre_detail(request, pk):
     chambre = get_object_or_404(Chambre.objects.select_related('immeuble__proprietaire', 'locataire'), pk=pk)
 
     # Vérification de permission : l'utilisateur est-il l'agence qui gère ou le propriétaire ?
-    is_managing_agence = False
-    if request.user.user_type == 'AG':
-        try:
-            if chambre.immeuble.proprietaire.agence == request.user.agence:
-                is_managing_agence = True
-        except (User.agence.RelatedObjectDoesNotExist, Proprietaire.DoesNotExist):
-            pass
-
+    is_managing_agence = _check_agence_permission(request.user, chambre)
     is_owner = (request.user.user_type == 'PR' and chambre.immeuble.proprietaire.user == request.user)
 
     if not (is_managing_agence or is_owner):

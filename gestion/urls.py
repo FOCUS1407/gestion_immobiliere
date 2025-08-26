@@ -1,15 +1,18 @@
 from django.urls import path, reverse_lazy
-from . import views, forms
+from . import views, forms 
+from django.views.generic.base import RedirectView
 from django.contrib.auth import views as auth_views
 
 app_name = 'gestion'
 
 urlpatterns = [
     # URLs générales et d'authentification
-    path('', views.accueil, name='accueil'),
+    # path('', views.accueil, name='accueil'),
+    # Redirige la page d'accueil (racine) directement vers la page de connexion
+    path('', RedirectView.as_view(url=reverse_lazy('gestion:connexion')), name='accueil'),
     path('connexion/', views.connexion, name='connexion'),
     path('deconnexion/', views.logout_view, name='logout'),
-    path('inscription/', views.register, name='register'),
+    path('inscription/', views.register_view, name='register'),
     path('terms-of-service/', views.terms_of_service_view, name='terms_of_service'),
     path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
     path('profil/', views.profil_utilisateur, name='profil'),
@@ -56,7 +59,7 @@ urlpatterns = [
 
     # Tableaux de bord
     path('tableau-de-bord/agence/', views.tableau_de_bord_agence, name='tableau_de_bord_agence'),
-    path('tableau-de-bord/proprietaire/', views.tableau_de_bord_proprietaire, name='tableau_de_bord_proprietaire'),
+   # path('tableau-de-bord/proprietaire/', views.tableau_de_bord_proprietaire, name='tableau_de_bord_proprietaire'),
 
     # Gestion des Propriétaires (par l'agence)
     path('proprietaires/ajouter/', views.ajouter_proprietaire, name='ajouter_proprietaire'),
@@ -89,6 +92,8 @@ urlpatterns = [
     path('paiements/<int:pk>/modifier/', views.modifier_paiement, name='modifier_paiement'),
     path('paiements/<int:pk>/supprimer/', views.supprimer_paiement, name='supprimer_paiement'),
     path('paiements/<int:pk>/quittance/', views.generer_quittance_pdf, name='generer_quittance_pdf'),
+    path('locataires/<int:locataire_id>/historique/', views.historique_paiement_locataire, name='historique_paiement_locataire'),
+    path('locataires/<int:locataire_id>/paiements/<int:year>/<int:month>/', views.historique_paiement_locataire_mois, name='historique_paiement_locataire_mois'),
 
     # Gestion des États des Lieux
     path('etats-des-lieux/<int:pk>/modifier/', views.modifier_etat_des_lieux, name='modifier_etat_des_lieux'),

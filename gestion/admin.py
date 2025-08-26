@@ -39,9 +39,9 @@ class CustomUserAdmin(UserAdmin):
 # Configuration pour les agences
 @admin.register(Agence)
 class AgenceAdmin(admin.ModelAdmin):
-    list_display = ('user', 'rccm', 'nif', 'date_creation')
-    search_fields = ('user__username', 'rccm', 'nif')
-    raw_id_fields = ('user',)
+    list_display = ('user', 'date_creation')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name')
+    list_filter = ('date_creation',)
 
 # Configuration pour les propriétaires
 @admin.register(Proprietaire)

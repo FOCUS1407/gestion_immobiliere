@@ -1,0 +1,80 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ page_title }}</h1>
+        <a href="{% url 'gestion:locataire_detail' locataire.id %}" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour au profil du locataire
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Détails du paiement pour {{ mois_couvert_str }}</h6>
+        </div>
+        <div class="card-body">
+            {% if location %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Immeuble :</strong> {{ location.chambre.immeuble.nom }}</p>
+                        <p><strong>Unité :</strong> {{ location.chambre.designation }}</p>
+                        <p><strong>Loyer mensuel attendu :</strong> {{ location.chambre.prix_loyer|floatformat:2 }} €</p>
+                    </div>
+                </div>
+                <hr>
+                {% if paiement %}
+                    <h5 class="mb-3">Paiement enregistré</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Montant payé :</strong> {{ paiement.montant|floatformat:2 }} €</p>
+                            <p><strong>Date de paiement :</strong> {{ paiement.date_paiement|date:"d F Y" }}</p>
+                            <p><strong>Moyen de paiement :</strong> {{ paiement.moyen_paiement.get_designation_display }}</p>
+                            <p><strong>Statut :</strong>
+                                {% if paiement.est_valide %}
+                                    <span class="badge bg-success">Validé</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">En attente de validation</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if paiement.preuve_paiement %}
+                                <p><strong>Preuve de paiement :</strong></p>
+                                <a href="{{ paiement.preuve_paiement.url }}" target="_blank" class="btn btn-outline-info">
+                                    <i class="fas fa-file-alt me-2"></i>Voir la preuve
+                                </a>
+                            {% else %}
+                                <p><strong>Preuve de paiement :</strong> Aucune fournie.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <a href="{% url 'gestion:modifier_paiement' paiement.id %}" class="btn btn-warning"><i class="fas fa-edit me-2"></i>Modifier</a>
+                        <a href="{% url 'gestion:supprimer_paiement' paiement.id %}" class="btn btn-danger"><i class="fas fa-trash me-2"></i>Supprimer</a>
+                        {% if paiement.est_valide %}
+                        <a href="{% url 'gestion:generer_quittance_pdf' paiement.id %}" class="btn btn-primary"><i class="fas fa-file-pdf me-2"></i>Générer la quittance</a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning" role="alert">
+                        <h4 class="alert-heading">Aucun paiement trouvé !</h4>
+                        <p>Aucun paiement n'a été enregistré pour <strong>{{ locataire }}</strong> pour le mois de <strong>{{ mois_couvert_str }}</strong>.</p>
+                        <hr>
+                        <a href="{% url 'gestion:ajouter_paiement' location.chambre.id %}?mois={{ mois_couvert_str|urlencode }}" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i>Ajouter un paiement pour ce mois
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-secondary" role="alert">
+                    Le locataire n'avait pas de location active durant le mois de {{ mois_couvert_str }}.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

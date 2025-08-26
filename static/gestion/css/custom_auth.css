@@ -1,0 +1,27 @@
+/* Styles spécifiques pour les pages d'authentification */
+
+body.login-page {
+    /* Assurez-vous que le chemin vers votre image est correct */
+    /* Il part du dossier css, remonte d'un niveau (../) puis entre dans images/ */
+    background-image: url('../images/background-login.jpg');
+
+    /* Fait en sorte que l'image couvre tout l'arrière-plan */
+    background-size: cover;
+
+    /* Centre l'image */
+    background-position: center center;
+
+    /* Empêche la répétition de l'image */
+    background-repeat: no-repeat;
+
+    /* Fixe l'image pour qu'elle ne défile pas avec le contenu */
+    background-attachment: fixed;
+}
+
+.login-container {
+    background-color: rgba(255, 255, 255, 0.95);
+    /* Fond blanc avec 95% d'opacité pour la lisibilité */
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}

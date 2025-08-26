@@ -1,3 +1,72 @@
+{% extends "gestion/pdf/base_pdf.html" %}
+{% load humanize %}
+
+{% block title %}Rapport Financier Mensuel{% endblock %}
+
+{% block content %}
+    <div class="header">
+        <div>
+            {% if agence.logo %}
+                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+            {% endif %}
+        </div>
+        <div class="agency-info">
+            <strong>{{ agence.user.get_full_name|default:agence.user.username }}</strong><br>
+            RCCM: {{ agence.rccm|default:'N/A' }}<br>
+            NIF: {{ agence.nif|default:'N/A' }}
+        </div>
+    </div>
+
+    <div class="report-title">
+        <h1>Rapport Financier Historique</h1>
+        {% if proprietaire_filtre %}
+            <p><strong>Rapport pour le propriétaire : {{ proprietaire_filtre.user.get_full_name }}</strong></p>
+        {% endif %}
+        <p style="font-size: 10px;">Généré le : {{ date_generation|date:"d F Y" }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Mois</th>
+                <th class="text-right">Loyer Attendu</th>
+                <th class="text-right">Loyer Payé</th>
+                <th class="text-right">Reste à Payer</th>
+                {% if not proprietaire_filtre %}
+                <th class="text-right">Taux Commission</th>
+                {% endif %}
+                <th class="text-right">Commission Agence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in report_data %}
+            <tr>
+                <td>{{ row.month_str }}</td>
+                <td class="text-right">{{ row.total_attendu|floatformat:0 }} Frcfa</td>
+                <td class="text-right">{{ row.total_paye|floatformat:0 }} Frcfa</td>
+                <td class="text-right">{{ row.total_impaye|floatformat:0 }} Frcfa</td>
+                {% if not proprietaire_filtre %}
+                <td class="text-right">{{ row.commission_rate|floatformat:2 }}%</td>
+                {% endif %}
+                <td class="text-right">{{ row.commission|floatformat:0 }} Frcfa</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <td>Total sur 12 mois</td>
+                <td class="text-right">{{ grand_total_attendu|floatformat:0 }} Frcfa</td>
+                <td class="text-right">{{ grand_total_paye|floatformat:0 }} Frcfa</td>
+                <td class="text-right">{{ grand_total_impaye|floatformat:0 }} Frcfa</td>
+                {% if not proprietaire_filtre %}
+                <td class="text-right">{{ grand_total_commission_rate|floatformat:2 }}%</td>
+                {% endif %}
+                <td class="text-right">{{ grand_total_commission|floatformat:0 }} Frcfa</td>
+            </tr>
+        </tfoot>
+    </table>
+{% endblock%}
+<!--
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -188,5 +257,5 @@
     </table>
 
 </body>
-
 </html>
+-->

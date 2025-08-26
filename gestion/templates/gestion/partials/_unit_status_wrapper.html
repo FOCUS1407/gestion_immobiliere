@@ -1,0 +1,18 @@
+{% comment %} Ce partiel contient à la fois les boutons de filtre et la liste des unités. {% endcomment %}
+<div class="mb-3 btn-group" role="group">
+    <a href="?statut=toutes&source=chambres" class="btn {% if statut_filter == 'toutes' or not statut_filter %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       hx-get="?statut=toutes&source=chambres" hx-target="#unit-status-wrapper" hx-swap="innerHTML" hx-push-url="true">
+        Toutes ({{ total_units }})
+    </a>
+    <a href="?statut=libre&source=chambres" class="btn {% if statut_filter == 'libre' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       hx-get="?statut=libre&source=chambres" hx-target="#unit-status-wrapper" hx-swap="innerHTML" hx-push-url="true">
+        Libres ({{ free_units }})
+    </a>
+    <a href="?statut=occupee&source=chambres" class="btn {% if statut_filter == 'occupee' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+       hx-get="?statut=occupee&source=chambres" hx-target="#unit-status-wrapper" hx-swap="innerHTML" hx-push-url="true">
+        Occupées ({{ occupied_units }})
+    </a>
+</div>
+<div id="chambres-list-container">
+    {% include "gestion/partials/_chambres_list.html" %}
+</div>

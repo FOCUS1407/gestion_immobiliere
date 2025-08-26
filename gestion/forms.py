@@ -1,4 +1,5 @@
 from django import forms
+from .models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
@@ -9,99 +10,46 @@ from .models import Agence, Proprietaire, Locataire, Location, Chambre, Immeuble
 
 User = get_user_model()
 
-class LoginForm(AuthenticationForm):
-    username = forms.CharField(widget=forms.TextInput(attrs={
-        'class': 'form-control',
-        'placeholder': "Nom d'utilisateur"
-    }))
-    password = forms.CharField(widget=forms.PasswordInput(attrs={
-        'class': 'form-control',
-        'placeholder': 'Mot de passe'
-    }))
-
-class RegisterForm(UserCreationForm):
-    email = forms.EmailField(
-        required=True,
-        label="Email",
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
-    telephone = forms.CharField(
-        max_length=20,
-        required=True,
-        label="Téléphone",
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    user_type = forms.ChoiceField(
-        # On redéfinit les choix pour l'inscription. Le type 'Propriétaire' seul ne peut être créé que par une agence.
-        choices=[('AG_PROP', "Je suis un propriétaire et je gère mes biens"), ('AG_ONLY', "Je suis une agence et je gère les biens d'autres propriétaires")],
-        required=True,
-        widget=forms.RadioSelect,
-        label="Quel type de compte souhaitez-vous créer ?"
-    )
-    rccm = forms.CharField(
-        label="Numéro RCCM (si agence)",
-        max_length=50,
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: RC/DLA/2024/A/123'})
-    )
-    nif = forms.CharField(
-        label="Numéro NIF (si agence)",
-        max_length=50,
-        required=False,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: M01234567890N'})
-    )
-    terms_accepted = forms.BooleanField(
-        required=True,
-        # Le label est défini dynamiquement dans __init__ pour éviter la dépendance circulaire.
-        error_messages={'required': "Vous devez accepter les conditions pour continuer."}
-    )
-
-    class Meta(UserCreationForm.Meta):
-        model = User
-        fields = ('username', 'email', 'telephone')
-
+class ConnexionForm(AuthenticationForm):
+    """
+    Formulaire de connexion personnalisé qui hérite de l'AuthenticationForm de Django
+    pour une gestion sécurisée de l'authentification.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # On définit le label ici pour s'assurer que la résolution de l'URL
-        # se fait au moment de l'exécution et non de l'importation.
-        self.fields['terms_accepted'].label = format_html(
-            "J'ai lu et j'accepte les <a href='#' data-bs-toggle='modal' data-bs-target='#termsModal'>Conditions d'Utilisation</a>"
+        self.fields['username'].widget.attrs.update(
+            {'class': 'form-control form-control-lg', 'placeholder': "Nom d'utilisateur"}
         )
-        self.fields['username'].widget.attrs.update({'class': 'form-control'})
-        self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
-        self.fields['password1'].label = "Mot de passe"
-        self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
-        self.fields['password2'].label = "Confirmer le mot de passe"
+        self.fields['password'].widget.attrs.update(
+            {'class': 'form-control form-control-lg', 'placeholder': 'Mot de passe'}
+        )
 
-    def clean(self):
-        cleaned_data = super().clean()
-        # La validation RCCM/NIF s'applique dans les deux cas, car l'utilisateur est une entité de gestion.
-        rccm = cleaned_data.get('rccm')
-        nif = cleaned_data.get('nif')
+class AgenceRegistrationForm(forms.ModelForm):
+    """
+    Formulaire d'inscription spécifiquement pour les agences.
+    Il ne demande que les informations nécessaires et gère la confirmation du mot de passe.
+    """
+    password = forms.CharField(
+        label="Mot de passe",
+        widget=forms.PasswordInput,
+    )
+    confirm_password = forms.CharField(
+        label="Confirmer le mot de passe",
+        widget=forms.PasswordInput,
+    )
 
-        if not rccm and not nif:
-            self.add_error('rccm', "Le numéro RCCM ou NIF est requis pour un compte de gestion.")
-            self.add_error('nif', "Le numéro RCCM ou NIF est requis pour un compte de gestion.")
+    class Meta:
+        model = CustomUser
+        # Champs demandés lors de l'inscription
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'addresse']
 
-        return cleaned_data
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        user.telephone = self.cleaned_data['telephone']
-        # Dans les deux cas, l'utilisateur est de type 'AGENCE' pour avoir accès aux outils de gestion.
-        user.user_type = User.AGENCE
-        
-        if commit:
-            user.save()
-            # On crée le profil Agence dans tous les cas.
-            agence_profil = Agence.objects.create(user=user, rccm=self.cleaned_data.get('rccm'), nif=self.cleaned_data.get('nif'))
-
-            # Si l'utilisateur est un propriétaire en autogestion, on crée aussi un profil Proprietaire lié à sa propre agence.
-            if self.cleaned_data.get('user_type') == 'AG_PROP':
-                Proprietaire.objects.create(user=user, agence=agence_profil, taux_commission=0, date_debut_contrat=timezone.now(), duree_contrat=0)
-
-        return user
+    def clean_confirm_password(self):
+        """Vérifie que les deux mots de passe sont identiques."""
+        password = self.cleaned_data.get("password")
+        confirm_password = self.cleaned_data.get("confirm_password")
+        if password and confirm_password and password != confirm_password:
+            raise forms.ValidationError("Les mots de passe ne correspondent pas.")
+        return confirm_password
 
 class UserUpdateForm(forms.ModelForm):
     class Meta:
@@ -245,11 +193,10 @@ class EtatDesLieuxForm(forms.ModelForm):
 class AgenceProfileForm(forms.ModelForm):
     class Meta:
         model = Agence
-        fields = ['logo', 'rccm', 'nif']
+        fields = ['logo']
         labels = {
             'logo': "Logo de l'agence",
-            'rccm': "Numéro RCCM",
-            'nif': "Numéro NIF"
+        
         }
 
 class ProprietaireProfileUpdateForm(forms.ModelForm):

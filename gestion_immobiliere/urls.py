@@ -27,7 +27,6 @@ urlpatterns = [
 
 # Uniquement pour le développement, pour servir les fichiers médias
 if settings.DEBUG:
-    # Ajoute les routes pour servir les fichiers statiques
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    # Ajoute les routes pour servir les fichiers média
+    # La ligne pour STATIC_URL est inutile en développement si 'django.contrib.staticfiles' est dans INSTALLED_APPS.
+    # La ligne ci-dessous est correcte et nécessaire pour servir les fichiers téléversés par les utilisateurs.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

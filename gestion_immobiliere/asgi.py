@@ -11,6 +11,7 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_immobiliere.settings')
+# En production, vous changerez peut-être ceci pour 'gestion_immobiliere.settings.production'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_immobiliere.settings.development')
 
 application = get_asgi_application()

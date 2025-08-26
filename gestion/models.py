@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from PIL import Image
 
 
+
 def agence_logo_path(instance, filename):
     """Génère un chemin de fichier unique pour le logo de l'agence."""
     return f'agence_logos/agence_{instance.id}/{filename}'
@@ -69,8 +70,6 @@ class CustomUser(AbstractUser):
 class Agence(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     logo = models.ImageField(upload_to=agence_logo_path, null=True, blank=True, verbose_name="Logo de l'agence")
-    rccm = models.CharField("Numéro RCCM", max_length=50, unique=True, null=True, blank=True)
-    nif = models.CharField("Numéro NIF", max_length=50, unique=True, null=True, blank=True)
     date_creation = models.DateField(auto_now_add=True)
 
     def __str__(self):
