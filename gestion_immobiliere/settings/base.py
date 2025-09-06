@@ -104,8 +104,12 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     
-] # Déjà correct, aucune modification nécessaire ici.
-STATIC_ROOT = BASE_DIR / 'staticfiles' # Répertoire où `collectstatic` placera les fichiers
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# ==============================================================================
+# CONFIGURATION DES FICHIERS MÉDIAS (TÉLÉVERSÉS PAR LES UTILISATEURS)
+# ==============================================================================
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

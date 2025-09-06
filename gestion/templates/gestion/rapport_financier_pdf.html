@@ -1,261 +1,108 @@
-{% extends "gestion/pdf/base_pdf.html" %}
-{% load humanize %}
-
-{% block title %}Rapport Financier Mensuel{% endblock %}
-
-{% block content %}
-    <div class="header">
-        <div>
-            {% if agence.logo %}
-                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
-            {% endif %}
-        </div>
-        <div class="agency-info">
-            <strong>{{ agence.user.get_full_name|default:agence.user.username }}</strong><br>
-            RCCM: {{ agence.rccm|default:'N/A' }}<br>
-            NIF: {{ agence.nif|default:'N/A' }}
-        </div>
-    </div>
-
-    <div class="report-title">
-        <h1>Rapport Financier Historique</h1>
-        {% if proprietaire_filtre %}
-            <p><strong>Rapport pour le propriétaire : {{ proprietaire_filtre.user.get_full_name }}</strong></p>
-        {% endif %}
-        <p style="font-size: 10px;">Généré le : {{ date_generation|date:"d F Y" }}</p>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Mois</th>
-                <th class="text-right">Loyer Attendu</th>
-                <th class="text-right">Loyer Payé</th>
-                <th class="text-right">Reste à Payer</th>
-                {% if not proprietaire_filtre %}
-                <th class="text-right">Taux Commission</th>
-                {% endif %}
-                <th class="text-right">Commission Agence</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in report_data %}
-            <tr>
-                <td>{{ row.month_str }}</td>
-                <td class="text-right">{{ row.total_attendu|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ row.total_paye|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ row.total_impaye|floatformat:0 }} Frcfa</td>
-                {% if not proprietaire_filtre %}
-                <td class="text-right">{{ row.commission_rate|floatformat:2 }}%</td>
-                {% endif %}
-                <td class="text-right">{{ row.commission|floatformat:0 }} Frcfa</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr style="background-color: #f2f2f2; font-weight: bold;">
-                <td>Total sur 12 mois</td>
-                <td class="text-right">{{ grand_total_attendu|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ grand_total_paye|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ grand_total_impaye|floatformat:0 }} Frcfa</td>
-                {% if not proprietaire_filtre %}
-                <td class="text-right">{{ grand_total_commission_rate|floatformat:2 }}%</td>
-                {% endif %}
-                <td class="text-right">{{ grand_total_commission|floatformat:0 }} Frcfa</td>
-            </tr>
-        </tfoot>
-    </table>
-{% endblock%}
-<!--
+{% load static %}
+{% load path_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Rapport Financier Mensuel</title>
+    <title>Rapport Financier Historique</title>
     <style>
         @page {
-            size: a4 portrait;
+            size: A4;
             margin: 1.5cm;
-            @bottom-center {
-                content: "Page " counter(page) " de " counter(pages);
-                font-size: 10px;
-                color: #555;
-            }
         }
-
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            font-size: 11px;
-            color: #333;
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10pt;
         }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #0056b3;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-
-        .header .logo {
-            width: 100px;
-            height: auto;
-        }
-
-        .header .agency-info {
-            text-align: right;
-        }
-
-        .report-title {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .report-title h1 {
-            margin: 0;
-            font-size: 22px;
-            color: #0056b3;
-        }
-
-        .report-title p {
-            margin: 5px 0 0;
-            font-size: 14px;
-            color: #555;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: bold;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .owner-section {
-            margin-bottom: 30px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            page-break-inside: avoid;
-        }
-
-        .owner-section h2 {
-            font-size: 16px;
-            color: #0056b3;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
-            margin-top: 0;
-        }
-
-        .summary-table {
-            width: 50%;
-            margin-left: 50%;
-        }
-
-        .summary-table td:first-child {
-            font-weight: bold;
-        }
-
-        .grand-total-section {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 2px solid #0056b3;
-        }
-
-        .grand-total-section h2 {
-            font-size: 18px;
-            color: #0056b3;
-        }
-
-        .footer {
+        .header, .footer {
             position: fixed;
-            bottom: -1cm;
             left: 0;
             right: 0;
-            text-align: center;
-            font-size: 10px;
-            color: #777;
+            color: #6c757d;
+            font-size: 9pt;
         }
+        .header {
+            top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .header-text { text-align: right; }
+        .logo { max-height: 40px; max-width: 120px; }
+        .footer { bottom: 0; text-align: center; }
+        .main-content { margin-top: 3cm; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { border: 1px solid #dee2e6; padding: 0.5rem; }
+        .table th { background-color: #f2f2f2; }
+        .text-end { text-align: right; }
+        .fw-bold { font-weight: bold; }
+        h1, h2 { text-align: center; }
+        h1 { margin-bottom: 10px; }
+        h2 { font-size: 1.2rem; color: #6c757d; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-
     <div class="header">
         <div>
             {% if agence.logo %}
-                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+                <img src="{{ agence.logo.path|to_path_uri }}" alt="Logo Agence" class="logo">
             {% endif %}
         </div>
-        <div class="agency-info">
-            <strong>{{ agence.user.get_full_name|default:agence.user.username }}</strong><br>
-            RCCM: {{ agence.rccm|default:'N/A' }}<br>
-            NIF: {{ agence.nif|default:'N/A' }}
+        <div class="header-text">
+            <div class="fw-bold">{{ agence.user.get_full_name }}</div>
+            {% if agence.user.addresse %}<div>{{ agence.user.addresse|linebreaksbr }}</div>{% endif %}
+            {% if agence.user.telephone %}<div>Tél : {{ agence.user.telephone }}</div>{% endif %}
+            {% if agence.user.email %}<div>Email : {{ agence.user.email }}</div>{% endif %}
         </div>
     </div>
 
-    <div class="report-title">
-        <h1>Rapport Financier Historique</h1>
-        {% if proprietaire_filtre %}
-            <p><strong>Rapport pour le propriétaire : {{ proprietaire_filtre.user.get_full_name }}</strong></p>
-        {% endif %}
-        <p style="font-size: 10px;">Généré le : {{ date_generation|date:"d F Y" }}</p>
+    <div class="footer">
+        Rapport généré par RentSolution le {{ date_generation|date:"d/m/Y" }}
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Mois</th>
-                <th class="text-right">Loyer Attendu</th>
-                <th class="text-right">Loyer Payé</th>
-                <th class="text-right">Reste à Payer</th>
-                {% if not proprietaire_filtre %}
-                <th class="text-right">Taux Commission</th>
-                {% endif %}
-                <th class="text-right">Commission Agence</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in report_data %}
-            <tr>
-                <td>{{ row.month_str }}</td>
-                <td class="text-right">{{ row.total_attendu|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ row.total_paye|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ row.total_impaye|floatformat:0 }} Frcfa</td>
-                {% if not proprietaire_filtre %}
-                <td class="text-right">{{ row.commission_rate|floatformat:2 }}%</td>
-                {% endif %}
-                <td class="text-right">{{ row.commission|floatformat:0 }} Frcfa</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr style="background-color: #f2f2f2; font-weight: bold;">
-                <td>Total sur 12 mois</td>
-                <td class="text-right">{{ grand_total_attendu|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ grand_total_paye|floatformat:0 }} Frcfa</td>
-                <td class="text-right">{{ grand_total_impaye|floatformat:0 }} Frcfa</td>
-                {% if not proprietaire_filtre %}
-                <td class="text-right">{{ grand_total_commission_rate|floatformat:2 }}%</td>
-                {% endif %}
-                <td class="text-right">{{ grand_total_commission|floatformat:0 }} Frcfa</td>
-            </tr>
-        </tfoot>
-    </table>
+    <div class="main-content">
+        <h1>Rapport Financier Historique</h1>
+        {% if proprietaire_filtre %}
+            <h2>Pour le propriétaire : {{ proprietaire_filtre.user.get_full_name }}</h2>
+        {% endif %}
 
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Mois</th>
+                    <th class="text-end">Loyer Attendu</th>
+                    <th class="text-end">Loyer Payé</th>
+                    <th class="text-end">Commission Agence</th>
+                    <th class="text-end">Impayé</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in report_data %}
+                <tr>
+                    <td>{{ item.month_str }}</td>
+                    <td class="text-end">{{ item.total_attendu|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ item.total_paye|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ item.commission|floatformat:0 }} Frcfa</td>
+                    <td class="text-end {% if item.total_impaye > 0 %}text-danger fw-bold{% endif %}">{{ item.total_impaye|floatformat:0 }} Frcfa</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Aucune donnée financière à afficher.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="fw-bold">
+                    <td>Total</td>
+                    <td class="text-end">{{ grand_total_attendu|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ grand_total_paye|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ grand_total_commission|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ grand_total_impaye|floatformat:0 }} Frcfa</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </body>
 </html>
--->

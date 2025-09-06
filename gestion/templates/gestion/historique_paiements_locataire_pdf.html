@@ -1,4 +1,5 @@
 {% load static %}
+{% load path_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -66,8 +67,8 @@
     <div class="header">
         <div>
             {% if agence.logo %}
-                <!-- WeasyPrint a besoin du chemin absolu du fichier, pas d'une URL -->
-                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+                <!-- CORRECTION : Utilisation du filtre pour normaliser le chemin -->
+                <img src="{{ agence.logo.path|to_path_uri }}" alt="Logo Agence" class="logo">
             {% endif %}
         </div>
         <div class="header-text">

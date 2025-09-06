@@ -1,74 +1,108 @@
-
-{% extends "gestion/pdf/base_pdf.html" %}
-{% load humanize %}
-
-{% block title %}Rapport Détaillé des Loyers{% endblock %}
-
-{% block content %}
+{% load static %}
+{% load path_filters %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Détaillé des Loyers - {{ mois_couvert_str }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10pt;
+        }
+        .header, .footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            color: #6c757d;
+            font-size: 9pt;
+        }
+        .header {
+            top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .header-text { text-align: right; }
+        .logo { max-height: 40px; max-width: 120px; }
+        .footer { bottom: 0; text-align: center; }
+        .main-content { margin-top: 3cm; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { border: 1px solid #dee2e6; padding: 0.5rem; }
+        .table th { background-color: #f2f2f2; }
+        .text-end { text-align: right; }
+        .fw-bold { font-weight: bold; }
+        h1, h2 { text-align: center; }
+        h1 { margin-bottom: 10px; }
+        h2 { font-size: 1.2rem; color: #6c757d; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
     <div class="header">
-        {% if agence.logo %}
-            <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
-        {% endif %}
-        <div class="agency-info">
-            <h2>{{ agence.user.get_full_name|default:agence.user.username }}</h2>
-            <p>{{ agence.user.addresse|linebreaksbr }}</p>
-            <p>Tel: {{ agence.user.telephone }} | Email: {{ agence.user.email }}</p>
+        <div>
+            {% if agence.logo %}
+                <img src="{{ agence.logo.path|to_path_uri }}" alt="Logo Agence" class="logo">
+            {% endif %}
+        </div>
+        <div class="header-text">
+            <div class="fw-bold">{{ agence.user.get_full_name }}</div>
+            {% if agence.user.addresse %}<div>{{ agence.user.addresse|linebreaksbr }}</div>{% endif %}
+            {% if agence.user.telephone %}<div>Tél : {{ agence.user.telephone }}</div>{% endif %}
+            {% if agence.user.email %}<div>Email : {{ agence.user.email }}</div>{% endif %}
         </div>
     </div>
 
-    <h1>Rapport Détaillé des Loyers</h1>
-    <p class="report-subtitle">
-        Mois de {{ mois_couvert_str }}
+    <div class="footer">
+        Rapport généré par RentSolution le {{ date_generation|date:"d/m/Y" }}
+    </div>
+
+    <div class="main-content">
+        <h1>Détail des Loyers</h1>
+        <h2>Pour la période de {{ mois_couvert_str }}</h2>
         {% if proprietaire_filtre %}
-            <br>Pour le propriétaire : <strong>{{ proprietaire_filtre.user.get_full_name }}</strong>
+            <h3 style="text-align: center; font-weight: normal;">Propriétaire : {{ proprietaire_filtre.user.get_full_name }}</h3>
         {% endif %}
-    </p>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Locataire</th>
-                <th>Immeuble / Unité</th>
-                <th class="text-right">Loyer Attendu</th>
-                <th class="text-right">Loyer Payé</th>
-                <th class="text-right">Reste à Payer</th>
-                <th>Date Paiement</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for detail in monthly_rent_details %}
-            <tr>
-                <td>{{ detail.locataire }}</td>
-                <td>{{ detail.chambre.immeuble.addresse|truncatewords:4 }} / {{ detail.chambre.designation }}</td>
-                <td class="text-right">{{ detail.loyer_a_payer|floatformat:0|intcomma }} Frcfa</td>
-                <td class="text-right text-success">{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
-                <td class="text-right text-danger">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</td>
-                <td>{{ detail.date_paiement|date:"d/m/Y"|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 20px;">Aucune donnée de location à afficher pour cette période.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <div class="summary">
-        <table>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Locataire</th>
+                    <th>Unité</th>
+                    <th class="text-end">Loyer à Payer</th>
+                    <th class="text-end">Loyer Payé</th>
+                    <th class="text-end">Reste à Payer</th>
+                </tr>
+            </thead>
             <tbody>
+                {% for detail in monthly_rent_details %}
                 <tr>
-                    <td class="label">Total Attendu :</td>
-                    <td class="text-right">{{ totals.attendu|floatformat:0|intcomma }} Frcfa</td>
+                    <td>{{ detail.locataire.get_full_name|default:detail.locataire.email }}</td>
+                    <td>{{ detail.chambre.designation }}</td>
+                    <td class="text-end">{{ detail.loyer_a_payer|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ detail.loyer_paye|floatformat:0 }} Frcfa</td>
+                    <td class="text-end {% if detail.reste_a_payer > 0 %}text-danger fw-bold{% endif %}">{{ detail.reste_a_payer|floatformat:0 }} Frcfa</td>
                 </tr>
+                {% empty %}
                 <tr>
-                    <td class="label text-success">Total Payé :</td>
-                    <td class="text-right text-success">{{ totals.paye|floatformat:0|intcomma }} Frcfa</td>
+                    <td colspan="5" class="text-center">Aucune donnée de loyer pour cette période et ce filtre.</td>
                 </tr>
-                <tr>
-                    <td class="label text-danger">Total Impayé :</td>
-                    <td class="text-right text-danger">{{ totals.impaye|floatformat:0|intcomma }} Frcfa</td>
-                </tr>
+                {% endfor %}
             </tbody>
+            <tfoot>
+                <tr class="fw-bold">
+                    <td colspan="2">Total</td>
+                    <td class="text-end">{{ totals.attendu|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ totals.paye|floatformat:0 }} Frcfa</td>
+                    <td class="text-end">{{ totals.impaye|floatformat:0 }} Frcfa</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
-{% endblock %}
+</body>
+</html>

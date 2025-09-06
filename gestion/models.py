@@ -141,8 +141,17 @@ class Locataire(models.Model):
     caution = models.DecimalField(max_digits=10, decimal_places=2)
     date_inscription = models.DateField(auto_now_add=True)
 
+    def get_full_name(self):
+        """
+        Retourne le nom complet du locataire (Prénom Nom).
+        Retourne une chaîne vide si le prénom ou le nom manquent.
+        """
+        if self.prenom and self.nom:
+            return f"{self.prenom} {self.nom}".strip()
+        return ""
+
     def __str__(self):
-        return f"{self.prenom} {self.nom}"
+        return self.get_full_name() or self.email or f"Locataire ID {self.pk}"
 
 class MoyenPaiement(models.Model):
     MOBILE = 'MOB'

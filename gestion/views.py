@@ -2158,7 +2158,6 @@ def generer_quittance_pdf(request, pk):
     html_string = render_to_string('gestion/quittance_pdf.html', context)
 
     # Générer le PDF
-    # CORRECTION : On s'assure que base_url est bien passé pour résoudre les chemins des images et CSS.
     pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
 
     # Créer la réponse HTTP
