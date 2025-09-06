@@ -86,6 +86,38 @@
                 </div>
             </div>
         </div>
+         <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Loyer Impayé ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_impaye_mois|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Commission Agence ({{ current_month_display }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_commission_agence|floatformat:0 }} Frcfa</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hand-holding-usd fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Content Row -->
@@ -121,10 +153,8 @@
                     <h6 class="m-0 font-weight-bold text-primary">Statut des Unités</h6>
                 </div>
                 <div class="card-body">
-                    <!-- Ce conteneur est maintenant la cible pour les mises à jour HTMX -->
-                    <div id="unit-status-wrapper">
-                        {% include "gestion/partials/_unit_status_wrapper.html" %}
-                    </div>
+                    <!-- Le bloc suivant est un composant autonome qui se met à jour lui-même -->
+                    {% include "gestion/partials/_unit_status_wrapper.html" %}
                 </div>
             </div>
         </div>

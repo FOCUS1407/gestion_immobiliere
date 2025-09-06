@@ -13,7 +13,8 @@ def main():
     # Définit le fichier de configuration à utiliser.
     # La variable DJANGO_SETTINGS_MODULE dans le fichier .env aura la priorité.
     # Si elle n'est pas définie, on utilise 'development' par défaut.
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_immobiliere.settings.development')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 
+                          'gestion_immobiliere.settings.base')
 
     try:
         from django.core.management import execute_from_command_line

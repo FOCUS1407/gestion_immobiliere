@@ -2,9 +2,9 @@
 
 body.login-page {
     /* Assurez-vous que le chemin vers votre image est correct */
-    /* Il part du dossier css, remonte d'un niveau (../) puis entre dans images/ */
-    background-image: url('../images/background-login.jpg');
-
+    /* Le chemin est RELATIF au fichier CSS. On remonte d'un dossier (../) pour sortir de /css, puis on entre dans /images. */
+    background-image: url('../images/mon_fond.png') !important;
+    /* On force la priorité sur les styles de Bootstrap */
     /* Fait en sorte que l'image couvre tout l'arrière-plan */
     background-size: cover;
 
@@ -19,9 +19,32 @@ body.login-page {
 }
 
 .login-container {
-    background-color: rgba(255, 255, 255, 0.95);
-    /* Fond blanc avec 95% d'opacité pour la lisibilité */
+    background-color: rgba(255, 255, 255, 0.85);
+    /* Fond blanc avec 85% d'opacité pour mieux voir l'arrière-plan */
     padding: 2.5rem;
     border-radius: 15px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Styles pour la page d'inscription en deux colonnes */
+.register-page-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.info-panel {
+    background: linear-gradient(45deg, #007bff, #0056b3); /* Dégradé de bleu */
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4rem;
+}
+
+.form-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem;
 }

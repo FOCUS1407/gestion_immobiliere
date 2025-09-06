@@ -1,67 +1,100 @@
-{% extends 'gestion/base.html' %}
+{% extends "gestion/base.html" %}
 
-{% block title %}Détails du Locataire{% endblock %}
+{% block title %}Détails de {{ locataire.get_full_name|default:locataire.email }}{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>{{ locataire.prenom }} {{ locataire.nom }}</h1>
-        <div>
-            <a href="{% url 'gestion:modifier_locataire' locataire.pk %}" class="btn btn-primary">Modifier</a>
-            <a href="{% url 'gestion:gerer_locataires' %}" class="btn btn-secondary">Retour à la liste</a>
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0 text-gray-800">Détails du locataire</h1>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'gestion:tableau_de_bord_agence' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+            <a href="{% url 'gestion:modifier_locataire' locataire.id %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit me-1"></i> Modifier
+            </a>
+            <a href="{% url 'gestion:supprimer_locataire' locataire.id %}" class="btn btn-danger btn-sm">
+                <i class="fas fa-trash me-1"></i> Supprimer
+            </a>
         </div>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
+    {% if not locataire.get_full_name %}
+    <div class="alert alert-warning" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Attention :</strong> Le nom et/ou le prénom de ce locataire ne sont pas renseignés. Veuillez les ajouter en cliquant sur "Modifier".
+    </div>
     {% endif %}
 
-    <div class="card mb-4">
-        <div class="card-header">
-            Informations Personnelles
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">{{ locataire.get_full_name|default:locataire.email }}</h6>
         </div>
         <div class="card-body">
-            <p><strong>Nom complet :</strong> {{ locataire.prenom }} {{ locataire.nom }}</p>
-            <p><strong>Téléphone :</strong> {{ locataire.telephone }}</p>
-            <p><strong>Email :</strong> {{ locataire.email|default:"Non renseigné" }}</p>
-            <p><strong>Raison Sociale :</strong> {{ locataire.raison_sociale|default:"N/A" }}</p>
-            <p><strong>Caution versée :</strong> {{ locataire.caution|floatformat:0 }} Frcfa</p>
-            <p><strong>Inscrit le :</strong> {{ locataire.date_inscription|date:"d F Y" }}</p>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Email :</strong> {{ locataire.email }}</p>
+                    <p><strong>Téléphone :</strong> {{ locataire.telephone }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Adresse :</strong> {{ locataire.adresse|default:"Non renseignée" }}</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <hr class="my-4">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Situation Actuelle</h6>
+        </div>
+        <div class="card-body">
+            {% if location_active %}
+                <p>
+                    Occupe actuellement l'unité <strong>{{ location_active.chambre.designation }}</strong>
+                    dans l'immeuble <a href="{% url 'gestion:immeuble_detail' location_active.chambre.immeuble.id %}"><strong>{{ location_active.chambre.immeuble.addresse }}</strong></a>
+                    depuis le {{ location_active.date_entree|date:"d/m/Y" }}.
+                </p>
+            {% else %}
+                <p class="text-muted">Ce locataire n'occupe actuellement aucune unité.</p>
+            {% endif %}
+        </div>
+    </div>
 
-    <h3>Historique des locations</h3>
-    {% if locations %}
-        <div class="list-group">
-            {% for location in locations %}
-                <div class="list-group-item">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">
-                            <a href="{% url 'gestion:chambre_detail' location.chambre.pk %}">Unité : {{ location.chambre.designation }}</a>
-                        </h5>
-                        {% if not location.date_sortie %}
-                            <span class="badge bg-success">Location Active</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Location Terminée</span>
-                        {% endif %}
-                    </div>
-                    <p class="mb-1">Immeuble : {{ location.chambre.immeuble.addresse|truncatechars:50 }}</p>
-                    <small>Du {{ location.date_entree|date:"d/m/Y" }} {% if location.date_sortie %}au {{ location.date_sortie|date:"d/m/Y" }}{% endif %}</small>
-                </div>
-            {% endfor %}
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Historique des locations</h6>
         </div>
-    {% else %}
-        <div class="alert alert-info">
-            Ce locataire n'a aucun historique de location.
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Unité</th>
+                            <th>Immeuble</th>
+                            <th>Date d'entrée</th>
+                            <th>Date de sortie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for location in locations_history %}
+                        <tr class="{% if not location.date_sortie %}table-success{% endif %}">
+                            <td>{{ location.chambre.designation }}</td>
+                            <td><a href="{% url 'gestion:immeuble_detail' location.chambre.immeuble.id %}">{{ location.chambre.immeuble.addresse }}</a></td>
+                            <td>{{ location.date_entree|date:"d/m/Y" }}</td>
+                            <td>{{ location.date_sortie|date:"d/m/Y"|default:'<span class="badge bg-success">En cours</span>'|safe }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">Aucun historique de location pour ce locataire.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    {% endif %}
+    </div>
 
 </div>
-{% endblock %}        
+{% endblock %}

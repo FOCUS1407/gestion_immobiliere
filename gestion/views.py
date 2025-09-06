@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from datetime import datetime, timedelta
 from decimal import Decimal
 from dateutil.relativedelta import relativedelta
+from .models import Locataire # Assurez-vous d'importer vos modèles
 import locale
 import string
 import random
@@ -140,11 +141,14 @@ def _get_financial_summary(agence_profil, month_str):
         }
 
     # Loyer total attendu pour les chambres occupées (1 requête)
-    total_attendu = Chambre.objects.filter(
-        immeuble__proprietaire__agence=agence_profil,
-        locataire__isnull=False
-    ).aggregate(
-        total=Coalesce(Sum('prix_loyer'), Decimal('0.00'))
+    # AMÉLIORATION : Se baser sur les locations actives pour le loyer attendu
+    total_attendu = Location.objects.filter(
+        chambre__immeuble__proprietaire__agence=agence_profil,
+        date_sortie__isnull=True # Location active
+    ).select_related('chambre').aggregate(
+        # Sum sur le prix_loyer de la chambre liée à la location active
+        # Coalesce pour gérer le cas où il n'y a pas de locations actives
+        total=Coalesce(Sum('chambre__prix_loyer'), Decimal('0.00'))
     )['total']
 
     # Paiements validés et commission pour le mois en cours (1 requête)
@@ -223,11 +227,14 @@ def _get_financial_report_context(agence, selected_owner_id, selected_month_str)
         proprietaire_filtre = proprietaires_qs.first()
 
     # 1. Obtenir tous les loyers attendus pour les propriétaires concernés, groupés par immeuble
-    expected_rents = Chambre.objects.filter(
-        immeuble__proprietaire__in=proprietaires_qs,
-        locataire__isnull=False
-    ).values('immeuble_id').annotate(total=Sum('prix_loyer'))
-    expected_by_immeuble = {item['immeuble_id']: item['total'] for item in expected_rents}
+    # AMÉLIORATION : Utiliser les locations actives comme source de vérité pour le loyer attendu.
+    expected_rents = Location.objects.filter(
+        chambre__immeuble__proprietaire__in=proprietaires_qs,
+        date_sortie__isnull=True  # Uniquement les locations actives
+    ).values(
+        'chambre__immeuble_id'  # Grouper par immeuble
+    ).annotate(total=Sum('chambre__prix_loyer'))
+    expected_by_immeuble = {item['chambre__immeuble_id']: item['total'] for item in expected_rents}
 
     # 2. Obtenir tous les loyers payés pour les propriétaires concernés pour le mois sélectionné, groupés par immeuble
     paid_rents = Paiement.objects.filter(
@@ -421,26 +428,20 @@ def tableau_de_bord_agence(request):
     # --- Liste des chambres (avec pagination) ---
     all_chambres_list = Chambre.objects.filter(
         immeuble__proprietaire__agence=agence_profil
-    ).select_related('immeuble', 'locataire').order_by('immeuble__addresse', 'designation')
+    ).select_related('immeuble').order_by('immeuble__addresse', 'designation')
 
-    # Appliquer le filtre de statut
-    # On donne une valeur par défaut pour rendre la logique plus claire. 'toutes' est notre cas par défaut.
-    statut_filter = request.GET.get('statut', 'toutes')
-    
-    if statut_filter in ['occupee', 'libre']:
-        # AMÉLIORATION : On utilise une sous-requête avec Exists() pour une méthode de
-        # filtrage plus moderne et robuste, qui évite les effets de bord potentiels
-        # de la méthode Count() avec GROUP BY.
-        active_location_exists = Location.objects.filter(
-            chambre_id=OuterRef('pk'),
-            date_sortie__isnull=True
+    # NOUVEAU : Appliquer le filtre par recherche textuelle sur les unités
+    q_unite = request.GET.get('q_unite', '')
+    if q_unite:
+        all_chambres_list = all_chambres_list.filter(
+            Q(designation__icontains=q_unite) |
+            Q(immeuble__addresse__icontains=q_unite)
         )
-        all_chambres_list = all_chambres_list.annotate(is_occupied=Exists(active_location_exists))
-        
-        if statut_filter == 'occupee':
-            all_chambres_list = all_chambres_list.filter(is_occupied=True)
-        else: # 'libre'
-            all_chambres_list = all_chambres_list.filter(is_occupied=False)
+
+    # NOUVEAU : Appliquer le filtre par propriétaire pour la liste des unités
+    unite_proprietaire_id = request.GET.get('unite_proprietaire_id')
+    if unite_proprietaire_id and unite_proprietaire_id.isdigit():
+        all_chambres_list = all_chambres_list.filter(immeuble__proprietaire__id=unite_proprietaire_id)
 
     # --- OPTIMISATION : Pré-charger les locations actives pour éviter les requêtes N+1 ---
     # 1. Récupérer toutes les locations actives pour l'agence en une seule requête
@@ -448,18 +449,39 @@ def tableau_de_bord_agence(request):
         chambre__immeuble__proprietaire__agence=agence_profil,
         date_sortie__isnull=True
     ).select_related('locataire')
-    
+
     # 2. Créer un dictionnaire pour un accès rapide : {chambre_id: location_object}
     location_map = {location.chambre_id: location for location in active_locations}
 
-    # 3. Paginer la liste des chambres
-    paginator_chambres = Paginator(all_chambres_list, 5)
-    chambres_page_number = request.GET.get('chambres_page')
-    chambres_page = paginator_chambres.get_page(chambres_page_number)
+    # Appliquer le filtre de statut en utilisant location_map
+    statut_filtre = request.GET.get('statut', 'toutes')
+    if statut_filtre == 'libres':
+        chambres_occupees_ids = location_map.keys()
+        filtered_chambres_list = all_chambres_list.exclude(id__in=chambres_occupees_ids)
+    elif statut_filtre == 'occupees':
+        chambres_occupees_ids = location_map.keys()
+        filtered_chambres_list = all_chambres_list.filter(id__in=chambres_occupees_ids)
+    else: # 'toutes'
+        filtered_chambres_list = all_chambres_list
 
+    # 3. Paginer la liste des chambres (maintenant filtrée)
+    paginator_chambres = Paginator(filtered_chambres_list, 5)
+    chambres_page_number = request.GET.get('chambres_page')
+    # Utilisation de .get_page() pour une gestion robuste et sécurisée des erreurs de pagination.
+    # Cela évite les erreurs EmptyPage lorsque la liste filtrée est vide.
+    chambres_page = paginator_chambres.get_page(chambres_page_number)
     # 4. Attacher la location active à chaque chambre de la page courante
+    #    On synchronise aussi `chambre.locataire` avec la source de vérité (la location active)
+    #    pour corriger les incohérences d'affichage, car le template utilise probablement ce champ.
     for chambre in chambres_page:
-        chambre.active_location = location_map.get(chambre.id)
+        active_location = location_map.get(chambre.id)
+        chambre.active_location = active_location
+        if active_location:
+            # Si une location active existe, on s'assure que le bon locataire est assigné.
+            chambre.locataire = active_location.locataire
+        else:
+            # Si aucune location active n'existe, on s'assure que la chambre est bien marquée comme libre.
+            chambre.locataire = None
 
     # Calcul du total impayé
     total_impaye_mois = financial_summary['total_attendu'] - financial_summary['total_paye']
@@ -470,6 +492,8 @@ def tableau_de_bord_agence(request):
         'nombre_proprietaires': paginator_proprietaires.count,
         'all_proprietaires': all_proprietaires_list, # Pour les filtres, si nécessaire
         'q_proprietaire': q_proprietaire, # Pour pré-remplir le champ de recherche
+        'q_unite': q_unite, # Pour pré-remplir le champ de recherche des unités
+
         # Données des chambres
         'chambres': chambres_page,
         'page_obj': chambres_page,
@@ -479,9 +503,11 @@ def tableau_de_bord_agence(request):
         'total_paye_mois': financial_summary['total_paye'],
         'commission_mois': financial_summary['commission'],
         'total_impaye_mois': total_impaye_mois,
+        'total_commission_agence': financial_summary['commission'],
         # Statistiques d'occupation
         **occupancy_stats,
-        'statut_filter': statut_filter, # Pour l'état actif des boutons
+        'statut_filter': statut_filtre, # Pour l'état actif des boutons
+        'selected_unite_proprietaire_id': int(unite_proprietaire_id) if unite_proprietaire_id and unite_proprietaire_id.isdigit() else '',
         'today': timezone.now(),
     }
 
@@ -503,7 +529,7 @@ def tableau_de_bord_agence(request):
         # Logique de robustesse : si des filtres spécifiques aux unités sont présents
         # (statut ou pagination des chambres), on déduit que la source est la liste 
         # des unités, même si le paramètre 'source' est manquant.
-        if not source and ('statut' in request.GET or 'chambres_page' in request.GET):
+        if not source and ('statut' in request.GET or 'chambres_page' in request.GET or 'unite_proprietaire_id' in request.GET or 'q_unite' in request.GET):
             source = 'chambres'
 
         if source == 'financial_report':
@@ -561,9 +587,24 @@ def _get_detailed_rent_report_context(agence_profil, proprietaire_id, selected_m
     total_paye = Decimal('0.00')
     commission_totale = Decimal('0.00')
 
+    # --- CORRECTION : Gérer les variations de locale pour 'mois_couvert' ---
+    # Générer le nom du mois en français
+    try:
+        locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+        mois_couvert_fr = selected_month_date.strftime('%B %Y').capitalize()
+    except locale.Error:
+        mois_couvert_fr = None # Ne sera pas utilisé si la locale échoue
+    
+    # Générer le nom du mois avec la locale par défaut du système (souvent l'anglais)
+    locale.setlocale(locale.LC_TIME, '')
+    mois_couvert_default = selected_month_date.strftime('%B %Y').capitalize()
+
+    # Créer une liste des chaînes à rechercher. On enlève les doublons si les locales sont identiques.
+    mois_couvert_options = list(set(filter(None, [mois_couvert_fr, mois_couvert_default])))
+
     paiements_du_mois = Paiement.objects.filter(
         location__in=locations_actives,
-        mois_couvert=mois_couvert_str,
+        mois_couvert__in=mois_couvert_options, # On cherche l'une ou l'autre des chaînes
         est_valide=True
     ).select_related('location__chambre__immeuble__proprietaire')
     paiements_map = {p.location_id: p for p in paiements_du_mois}
@@ -636,6 +677,42 @@ def rapport_detaille_loyers(request):
     return render(request, 'gestion/rapport_detaille_loyers.html', context)
 
 @login_required
+def locataire_detail(request, pk):
+    """
+    Affiche les détails d'un locataire, y compris sa location actuelle et son historique.
+    """
+    locataire = get_object_or_404(Locataire, pk=pk)
+
+    # Vérification de permission : l'agence connectée gère-t-elle ce locataire ?
+    is_managing_agence = False
+    try:
+        if request.user.user_type == 'AG' and locataire.agence == request.user.agence:
+            is_managing_agence = True
+    except (User.agence.RelatedObjectDoesNotExist, AttributeError):
+        pass # L'utilisateur n'est pas une agence ou le locataire n'a pas d'agence
+
+    if not is_managing_agence:
+        raise PermissionDenied("Vous n'avez pas la permission de voir les détails de ce locataire.")
+
+    # Trouver la location active actuelle pour ce locataire (optimisé)
+    location_active = Location.objects.filter(
+        locataire=locataire,
+        date_sortie__isnull=True
+    ).select_related('chambre', 'chambre__immeuble').first()
+
+    # Historique des locations (passées et présentes)
+    locations_history = Location.objects.filter(
+        locataire=locataire
+    ).select_related('chambre', 'chambre__immeuble').order_by('-date_entree')
+
+    context = {
+        'locataire': locataire,
+        'location_active': location_active,
+        'locations_history': locations_history,
+    }
+    return render(request, 'gestion/locataire_detail.html', context)
+
+@login_required
 def tableau_de_bord_proprietaire(request):
     """
     Affiche le tableau de bord pour un utilisateur de type Propriétaire,
@@ -644,7 +721,7 @@ def tableau_de_bord_proprietaire(request):
     if request.user.user_type != 'PR':
         raise PermissionDenied("Seuls les propriétaires peuvent accéder à cette page.")
 
-    # Initialisation des variables
+    # Initialisation des variables pour le contexte
     immeubles_proprietaire = Immeuble.objects.none()
     nombre_immeubles = 0
     total_attendu_mois = Decimal('0.00')
@@ -667,7 +744,7 @@ def tableau_de_bord_proprietaire(request):
         nombre_immeubles = immeubles_proprietaire.count()
 
         # --- Calcul du résumé financier et du rapport détaillé pour le mois en cours ---
-        if nombre_immeubles > 0:
+        if proprietaire_profil and nombre_immeubles > 0:
             # 1. Récupérer toutes les locations actives pour ce propriétaire PENDANT le mois en cours
             locations_actives = Location.objects.filter(
                 Q(chambre__immeuble__proprietaire=proprietaire_profil) &
@@ -675,6 +752,10 @@ def tableau_de_bord_proprietaire(request):
                 (Q(date_sortie__isnull=True) | Q(date_sortie__gte=start_of_month))
             ).select_related('chambre', 'locataire')
 
+            # Calcul du total attendu basé sur les locations actives
+            total_attendu_mois = locations_actives.aggregate(
+                total=Coalesce(Sum('chambre__prix_loyer'), Decimal('0.00'))
+            )['total']
             # 2. Récupérer les paiements du mois pour ces locations
             paiements_du_mois = Paiement.objects.filter(
                 location__in=locations_actives,
@@ -685,7 +766,6 @@ def tableau_de_bord_proprietaire(request):
 
             # 3. Itérer sur les locations pour construire le rapport et calculer les totaux
             for location in locations_actives:
-                loyer_a_payer = location.chambre.prix_loyer
                 paiement = paiements_map.get(location.id)
 
                 if paiement:
@@ -694,21 +774,18 @@ def tableau_de_bord_proprietaire(request):
                 else:
                     loyer_paye = Decimal('0.00')
                     date_paiement = None
-                
-                reste_a_payer = loyer_a_payer - loyer_paye
+
+                reste_a_payer = location.chambre.prix_loyer - loyer_paye
 
                 monthly_rent_details.append({
                     'locataire': location.locataire,
                     'chambre': location.chambre,
-                    'loyer_a_payer': loyer_a_payer,
+                    'loyer_a_payer': location.chambre.prix_loyer,
                     'loyer_paye': loyer_paye,
                     'reste_a_payer': reste_a_payer,
                     'date_paiement': date_paiement,
-                    
                 })
-
                 # Mettre à jour les totaux
-                total_attendu_mois += loyer_a_payer
                 total_paye_mois += loyer_paye
 
             # 4. Calculer la commission
@@ -796,6 +873,7 @@ class CustomPasswordChangeDoneView(PasswordChangeDoneView):
             request.user.must_change_password = False
             request.user.save()
         return super().get(request, *args, **kwargs)
+    
 @login_required
 def ajouter_proprietaire(request):
     """
@@ -853,28 +931,28 @@ def ajouter_proprietaire(request):
 
                 messages.success(request, f"Le propriétaire {proprietaire_user.get_full_name()} a été ajouté avec succès.")
 
-                # --- Envoi de l'email de bienvenue ---
-                try:
-                    subject = "Bienvenue sur RentSolution !"
-                    login_url = request.build_absolute_uri(reverse('gestion:connexion'))
+                # # --- Envoi de l'email de bienvenue ---
+                # try:
+                #     subject = render_to_string('gestion/email/welcome_proprietaire_subject.txt').strip()
+                #     login_url = request.build_absolute_uri(reverse('gestion:connexion'))
                     
-                    email_context = {
-                        'user': proprietaire_user,
-                        'password': password,
-                        'login_url': login_url,
-                    }
+                #     email_context = {
+                #         'user': proprietaire_user,
+                #         'password': password,
+                #         'login_url': login_url,
+                #     }
                     
-                    text_body = render_to_string('gestion/email/welcome_proprietaire_body.txt', email_context)
-                    html_body = render_to_string('gestion/email/welcome_proprietaire_body.html', email_context)
+                #     text_body = render_to_string('gestion/email/welcome_proprietaire_body.txt', email_context)
+                #     html_body = render_to_string('gestion/email/welcome_proprietaire_body.html', email_context)
 
-                    send_mail(
-                        subject=subject, message=text_body, from_email=None,
-                        recipient_list=[proprietaire_user.email], html_message=html_body,
-                        fail_silently=False,
-                    )
-                    messages.info(request, f"Un email de bienvenue a été envoyé à {proprietaire_user.email} avec ses identifiants.")
-                except Exception as email_error:
-                    messages.warning(request, f"Le propriétaire a été créé, mais l'envoi de l'email de bienvenue a échoué : {email_error}")
+                #     send_mail(
+                #         subject=subject, message=text_body, from_email=None,
+                #         recipient_list=[proprietaire_user.email], html_message=html_body,
+                #         fail_silently=False,
+                #     )
+                #     messages.info(request, f"Un email de bienvenue a été envoyé à {proprietaire_user.email} avec ses identifiants.")
+                # except Exception as email_error:
+                #     messages.warning(request, f"Le propriétaire a été créé, mais l'envoi de l'email de bienvenue a échoué : {email_error}")
 
                 # Rediriger vers la page de détail du nouveau propriétaire pour pouvoir lui ajouter des biens
                 return redirect('gestion:proprietaire_detail', pk=proprietaire_user.pk)
@@ -1043,32 +1121,6 @@ def ajouter_locataire(request):
     return render(request, 'gestion/ajouter_locataire.html', {'form': form})
 
 @login_required
-def locataire_detail(request, pk):
-    """
-    Affiche les détails d'un locataire spécifique.
-    """
-    if request.user.user_type != 'AG':
-        raise PermissionDenied("Seules les agences peuvent voir les détails des locataires.")
-
-    locataire = get_object_or_404(Locataire, pk=pk)
-
-    # Permission check: Is this tenant managed by the current agency?
-    try:
-        if locataire.agence != request.user.agence:
-            raise PermissionDenied("Vous ne gérez pas ce locataire.")
-    except User.agence.RelatedObjectDoesNotExist:
-         raise PermissionDenied("Votre profil d'agence est incomplet.")
-
-    # Get all past and present locations for this tenant
-    locations = Location.objects.filter(locataire=locataire).select_related('chambre__immeuble').order_by('-date_entree')
-
-    context = {
-        'locataire': locataire,
-        'locations': locations,
-    }
-    return render(request, 'gestion/locataire_detail.html', context)
-
-@login_required
 def historique_paiement_locataire(request, locataire_id):
     """
     Affiche l'historique complet de tous les paiements pour un locataire, avec pagination.
@@ -1190,6 +1242,101 @@ def modifier_locataire(request, pk):
     }
     return render(request, 'gestion/modifier_locataire.html', context)
 
+
+@login_required
+def telecharger_paiements_locataire(request, locataire_id):
+    """
+    Génère un fichier CSV de l'historique des paiements pour un locataire donné.
+    """
+    # --- Vérifications de sécurité ---
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seules les agences peuvent effectuer cette action.")
+
+    locataire = get_object_or_404(Locataire, pk=locataire_id)
+    
+    try:
+        if locataire.agence != request.user.agence:
+            raise PermissionDenied("Vous ne gérez pas ce locataire.")
+    except User.agence.RelatedObjectDoesNotExist:
+        raise PermissionDenied("Votre profil d'agence est incomplet.")
+
+    # Définir le nom du fichier de sortie
+    filename = f"historique_paiements_{locataire.nom}_{locataire.prenom}.csv".replace(" ", "_")
+
+    # Créer la réponse HTTP avec les en-têtes corrects pour un fichier CSV
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'},
+    )
+    response.write(u'\ufeff'.encode('utf8')) # BOM pour Excel
+
+    writer = csv.writer(response, delimiter=';')
+
+    # Écrire la ligne d'en-tête
+    writer.writerow(['Date de Paiement', 'Montant (Frcfa)', 'Période Concernée', 'Bien Concerné', 'Méthode de Paiement'])
+
+    # Récupérer tous les paiements pour ce locataire (source de vérité : via Location)
+    paiements = Paiement.objects.filter(
+        location__locataire=locataire
+    ).select_related(
+        'location__chambre__immeuble', 
+        'moyen_paiement'
+    ).order_by('date_paiement')
+
+    # Écrire chaque paiement
+    for paiement in paiements:
+        writer.writerow([
+            paiement.date_paiement,
+            paiement.montant,
+            paiement.mois_couvert,
+            f"{paiement.location.chambre.designation} ({paiement.location.chambre.immeuble.addresse})",
+            paiement.moyen_paiement.get_designation_display() if paiement.moyen_paiement else "-",
+        ])
+
+    return response
+
+@login_required
+def telecharger_paiements_locataire_pdf(request, locataire_id):
+    """
+    Génère un fichier PDF de l'historique des paiements pour un locataire donné.
+    """
+    if HTML is None:
+        messages.error(request, "La génération de PDF n'est pas disponible. Veuillez contacter l'administrateur.")
+        return redirect('gestion:locataire_detail', pk=locataire_id)
+
+    if request.user.user_type != 'AG':
+        raise PermissionDenied("Seules les agences peuvent effectuer cette action.")
+
+    locataire = get_object_or_404(Locataire, pk=locataire_id)
+    try:
+        agence = request.user.agence
+        if locataire.agence != agence:
+            raise PermissionDenied("Vous ne gérez pas ce locataire.")
+    except User.agence.RelatedObjectDoesNotExist:
+        raise PermissionDenied("Votre profil d'agence est incomplet.")
+
+    paiements = Paiement.objects.filter(location__locataire=locataire).select_related('location__chambre__immeuble', 'moyen_paiement').order_by('date_paiement')
+    total_paye = paiements.aggregate(total=Coalesce(Sum('montant'), Decimal('0.00')))['total']
+
+    context = {
+        'locataire': locataire,
+        'paiements': paiements,
+        'agence': agence,
+        'total_paye': total_paye,
+        'date_generation': timezone.now().date(),
+    }
+    html_string = render_to_string('gestion/historique_paiements_locataire_pdf.html', context)
+    
+    # CORRECTION : On passe l'URL de base à WeasyPrint pour qu'il puisse charger
+    # les fichiers CSS externes (comme Bootstrap) et les images locales.
+    # `base_url` aide à résoudre les chemins relatifs dans le HTML.
+    pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    filename = f"historique_paiements_{locataire.nom}_{locataire.prenom}.pdf".replace(" ", "_")
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
 @login_required
 def supprimer_locataire(request, pk):
     """
@@ -1201,7 +1348,7 @@ def supprimer_locataire(request, pk):
     locataire = get_object_or_404(Locataire, pk=pk)
 
     # Vérification de sécurité
-    try:
+    try: # Vérifie si l'agence connectée gère ce locataire
         if locataire.agence != request.user.agence:
             raise PermissionDenied("Vous ne gérez pas ce locataire.")
     except User.agence.RelatedObjectDoesNotExist:
@@ -1213,9 +1360,12 @@ def supprimer_locataire(request, pk):
         messages.success(request, f"Le locataire '{locataire_nom}' a été supprimé avec succès.")
         return redirect('gestion:gerer_locataires')
 
+    # Vérifie si le locataire a des locations actives (source de vérité)
+    is_occupant = Location.objects.filter(locataire=locataire, date_sortie__isnull=True).exists()
+
     context = {
         'locataire': locataire,
-        'is_occupant': locataire.chambres.exists(),
+        'is_occupant': is_occupant,
     }
     return render(request, 'gestion/locataire_confirm_delete.html', context)
 
@@ -1276,7 +1426,10 @@ def immeuble_detail(request, pk):
     if not (is_managing_agence or is_owner):
         raise PermissionDenied("Vous n'avez pas la permission de voir cet immeuble.")
 
-    chambres = Chambre.objects.filter(immeuble=immeuble).select_related('locataire')
+    # AMÉLIORATION : Ne pas select_related('locataire') ici, on va le gérer via Location
+    chambres = Chambre.objects.filter(immeuble=immeuble)
+
+    # --- OPTIMISATION : Pré-charger les locations actives pour éviter les requêtes N+1 ---
 
     # --- Calculs pour les statistiques de l'immeuble ---
     total_units = chambres.count()
@@ -1285,13 +1438,33 @@ def immeuble_detail(request, pk):
     occupancy_rate = 0
     if total_units > 0:
         occupancy_rate = (occupied_units / total_units) * 100
-        
-    # Le loyer total ne doit concerner que les unités occupées
-    total_rent = chambres.filter(locataire__isnull=False).aggregate(total=Sum('prix_loyer'))['total'] or 0
+
+    # 1. Récupérer toutes les locations actives pour les chambres de cet immeuble
+    active_locations = Location.objects.filter(
+        chambre__in=chambres, # Filtre sur les chambres de cet immeuble
+        date_sortie__isnull=True
+    ).select_related('locataire') # Pré-charger le locataire
+
+    # 2. Créer un dictionnaire pour un accès rapide : {chambre_id: location_object}
+    location_map = {location.chambre_id: location for location in active_locations}
+
+    # 3. Attacher la location active et le locataire à chaque chambre
+    #    On crée une nouvelle liste pour ne pas modifier le queryset original pendant l'itération
+    chambres_with_status = []
+    for chambre in chambres:
+        active_location = location_map.get(chambre.id)
+        chambre.active_location = active_location # Pour le template
+        chambre.locataire_actuel = active_location.locataire if active_location else None # Pour le template
+        chambres_with_status.append(chambre)
+
+    # Recalculer les statistiques d'occupation et le loyer total en se basant sur les locations actives
+    occupied_units = len(active_locations)
+    total_rent = sum(loc.chambre.prix_loyer for loc in active_locations)
+    occupancy_rate = (occupied_units / total_units) * 100 if total_units > 0 else 0
 
     context = {
         'immeuble': immeuble,
-        'chambres': chambres,
+        'chambres': chambres_with_status, # Utiliser la liste enrichie
         'occupancy_rate': occupancy_rate,
         'total_rent': total_rent,
         'is_managing_agence': is_managing_agence,
@@ -1446,7 +1619,7 @@ def chambre_detail(request, pk):
     """
     Affiche les détails d'une chambre et permet d'assigner un locataire.
     """
-    chambre = get_object_or_404(Chambre.objects.select_related('immeuble__proprietaire', 'locataire'), pk=pk)
+    chambre = get_object_or_404(Chambre.objects.select_related('immeuble__proprietaire'), pk=pk)
 
     # Vérification de permission : l'utilisateur est-il l'agence qui gère ou le propriétaire ?
     is_managing_agence = _check_agence_permission(request.user, chambre)
@@ -1470,8 +1643,8 @@ def chambre_detail(request, pk):
             raise PermissionDenied("Seule l'agence peut effectuer cette action.")
 
         # Gère l'assignation d'un nouveau locataire
-        if 'submit_location' in request.POST:
-            if chambre.locataire is not None:
+        if 'submit_location' in request.POST: # Assignation d'un nouveau locataire
+            if location_active: # Vérifie s'il y a déjà une location active
                 messages.error(request, "Cette chambre est déjà occupée.")
                 return redirect('gestion:chambre_detail', pk=pk)
 
@@ -1505,19 +1678,21 @@ def chambre_detail(request, pk):
 
     else: # GET request
         if is_managing_agence:
-            if chambre.locataire is None:
+            if not location_active: # Si pas de location active, on peut proposer d'en créer une
                 location_form = LocationForm(agence=request.user.agence)
             if location_active:
                 etat_des_lieux_form = EtatDesLieuxForm()
-
+    
     # --- Construction de l'historique complet des paiements (payés et arriérés) ---
     payment_history = []
-    if chambre.locataire:
+    if location_active: # L'historique des paiements est lié à la location active
         if location_active:
             # Récupérer tous les paiements (validés ou non) et les mapper par mois pour un accès rapide
+            # CORRECTION : On cherche tous les paiements faits par le locataire actuel POUR CETTE CHAMBRE,
+            # peu importe la location (ancienne ou nouvelle).
             all_payments = {
                 p.mois_couvert: p 
-                for p in Paiement.objects.filter(location=location_active).order_by('date_paiement')
+                for p in Paiement.objects.filter(location__chambre=chambre, location__locataire=location_active.locataire).order_by('date_paiement')
             }
             
             # Définir la locale en français pour générer les noms de mois correctement
@@ -1551,6 +1726,7 @@ def chambre_detail(request, pk):
     context = {
         'chambre': chambre,
         'location_form': location_form,
+        'locataire_actuel': location_active.locataire if location_active else None, # Passer le locataire actuel au template
         'etat_des_lieux_form': etat_des_lieux_form,
         'etats_des_lieux': etats_des_lieux,
         'location_active': location_active,
@@ -1691,17 +1867,19 @@ def liberer_chambre(request, pk):
         raise PermissionDenied("Seules les agences peuvent libérer une unité.")
 
     if request.method == 'POST':
-        if chambre.locataire:
-            locataire_nom = str(chambre.locataire)
+        # AMÉLIORATION : Se baser sur la présence d'une location active (source de vérité)
+        # plutôt que sur le champ dénormalisé `chambre.locataire`.
+        location_active = Location.objects.filter(chambre=chambre, date_sortie__isnull=True).first()
+        
+        if location_active:
+            locataire_nom = str(location_active.locataire)
             
             with transaction.atomic():
-                # Trouve la location active et définit la date de sortie
-                location = Location.objects.filter(chambre=chambre, locataire=chambre.locataire, date_sortie__isnull=True).first()
-                if location:
-                    location.date_sortie = timezone.now().date()
-                    location.save()
+                # Marque la date de sortie sur la location active pour la terminer.
+                location_active.date_sortie = timezone.now().date()
+                location_active.save()
                 
-                # Libère la chambre
+                # Met à jour le champ dénormalisé pour la cohérence.
                 chambre.locataire = None
                 chambre.save()
             
@@ -1710,7 +1888,7 @@ def liberer_chambre(request, pk):
             messages.warning(request, "Cette unité est déjà libre.")
     
     return redirect('gestion:chambre_detail', pk=chambre.pk)
-
+    
 @login_required
 def ajouter_paiement(request, chambre_id):
     """
@@ -1980,6 +2158,7 @@ def generer_quittance_pdf(request, pk):
     html_string = render_to_string('gestion/quittance_pdf.html', context)
 
     # Générer le PDF
+    # CORRECTION : On s'assure que base_url est bien passé pour résoudre les chemins des images et CSS.
     pdf_file = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
 
     # Créer la réponse HTTP

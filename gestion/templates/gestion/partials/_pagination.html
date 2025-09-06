@@ -1,0 +1,33 @@
+{% if page_obj.has_other_pages %}
+<div class="d-flex justify-content-end pt-3">
+    <nav aria-label="Pagination des unités">
+        <ul class="pagination pagination-sm">
+
+            {# Bouton Précédent #}
+            <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+                {% if page_obj.has_previous %}
+                    <a class="page-link" hx-get="?chambres_page={{ page_obj.previous_page_number }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}" hx-target="#unit-status-wrapper" hx-swap="outerHTML" href="?chambres_page={{ page_obj.previous_page_number }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}">&laquo;</a>
+                {% else %}
+                    <span class="page-link">&laquo;</span>
+                {% endif %}
+            </li>
+
+            {# Numéros de page #}
+            {% for i in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                    <a class="page-link" hx-get="?chambres_page={{ i }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}" hx-target="#unit-status-wrapper" hx-swap="outerHTML" href="?chambres_page={{ i }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}">{{ i }}</a>
+                </li>
+            {% endfor %}
+
+            {# Bouton Suivant #}
+            <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+                {% if page_obj.has_next %}
+                    <a class="page-link" hx-get="?chambres_page={{ page_obj.next_page_number }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}" hx-target="#unit-status-wrapper" hx-swap="outerHTML" href="?chambres_page={{ page_obj.next_page_number }}&source=chambres&statut={{ statut_filter }}&q_unite={{ q_unite }}&unite_proprietaire_id={{ selected_unite_proprietaire_id }}">&raquo;</a>
+                {% else %}
+                    <span class="page-link">&raquo;</span>
+                {% endif %}
+            </li>
+        </ul>
+    </nav>
+</div>
+{% endif %}

@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Historique des paiements de {{ locataire }}</title>
+    <!-- Lier les feuilles de style pour que WeasyPrint puisse les utiliser -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <style>
+        /* Styles spécifiques pour l'impression PDF */
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 10pt;
+        }
+        .header, .footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            color: #6c757d;
+            font-size: 9pt;
+        }
+        .header {
+            top: 0; /* Ancrage en haut */
+            display: flex; /* Utilisation de flexbox pour aligner le logo et le texte */
+            justify-content: space-between; /* Espace entre le logo et le texte */
+            align-items: center; /* Alignement vertical */
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .header-text {
+            text-align: right;
+        }
+        .logo {
+            /* Définir une taille maximale pour le logo */
+            max-height: 40px;
+            max-width: 120px;
+        }
+        .footer {
+            bottom: 0;
+            text-align: center;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            border: 1px solid #dee2e6;
+            padding: 0.5rem;
+        }
+        .table th {
+            background-color: #f2f2f2;
+        }
+        .text-end { text-align: right; }
+        .fw-bold { font-weight: bold; }
+        .main-title {
+            /* Ajoute une marge en haut pour ne pas être caché par l'en-tête fixe */
+            margin-top: 3cm; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            {% if agence.logo %}
+                <!-- WeasyPrint a besoin du chemin absolu du fichier, pas d'une URL -->
+                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
+            {% endif %}
+        </div>
+        <div class="header-text">
+            <div class="fw-bold">{{ agence.user.get_full_name }}</div>
+            {% if agence.user.addresse %}
+                <div>{{ agence.user.addresse|linebreaksbr }}</div>
+            {% endif %}
+            {% if agence.user.telephone %}
+                <div>Tél : {{ agence.user.telephone }}</div>
+            {% endif %}
+            {% if agence.user.email %}
+                <div>Email : {{ agence.user.email }}</div>
+            {% endif %}
+            <div class="mt-2 text-muted">Généré le {{ date_generation|date:"d/m/Y" }}</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Historique généré par RentSolution le {{ date_generation|date:"d/m/Y" }}
+    </div>
+
+    <h1 class="h3 mb-4 text-center main-title">Historique des paiements pour {{ locataire }}</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date Paiement</th>
+                <th>Période</th>
+                <th>Bien Concerné</th>
+                <th class="text-end">Montant Payé</th>
+                <th>Moyen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for paiement in paiements %}
+            <tr>
+                <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
+                <td>{{ paiement.mois_couvert }}</td>
+                <td>{{ paiement.location.chambre.designation }} ({{ paiement.location.chambre.immeuble.addresse }})</td>
+                <td class="text-end">{{ paiement.montant|floatformat:2 }} Frcfa</td>
+                <td>{{ paiement.moyen_paiement.get_designation_display|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">Aucun paiement enregistré pour ce locataire.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="fw-bold">
+                <td colspan="3" class="text-end">Total Payé</td>
+                <td class="text-end">{{ total_paye|floatformat:2 }} Frcfa</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</body>
+</html>

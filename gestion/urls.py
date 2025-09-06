@@ -86,6 +86,8 @@ urlpatterns = [
     path('locataires/<int:pk>/', views.locataire_detail, name='locataire_detail'),
     path('locataires/<int:pk>/modifier/', views.modifier_locataire, name='modifier_locataire'),
     path('locataires/<int:pk>/supprimer/', views.supprimer_locataire, name='supprimer_locataire'),
+    path('locataire/<int:locataire_id>/telecharger-paiements-csv/', views.telecharger_paiements_locataire, name='telecharger_paiements_locataire_csv'),
+    path('locataire/<int:locataire_id>/telecharger-paiements-pdf/', views.telecharger_paiements_locataire_pdf, name='telecharger_paiements_locataire_pdf'),
 
     # Gestion des Paiements (par l'agence)
     path('chambres/<int:chambre_id>/paiements/ajouter/', views.ajouter_paiement, name='ajouter_paiement'),

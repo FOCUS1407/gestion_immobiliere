@@ -73,6 +73,7 @@
                             <th class="text-end">Loyer Payé</th>
                             <th class="text-end">Reste à Payer</th>
                             <th>Date de Paiement</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,13 +85,17 @@
                             <td class="text-end {% if detail.loyer_paye > 0 %}text-success fw-bold{% endif %}">{{ detail.loyer_paye|floatformat:0|intcomma }} Frcfa</td>
                             <td class="text-end {% if detail.reste_a_payer > 0 %}text-danger fw-bold{% endif %}">{{ detail.reste_a_payer|floatformat:0|intcomma }} Frcfa</td>
                             <td>{{ detail.date_paiement|date:"d/m/Y"|default:"--" }}</td>
+                            <td class="text-center">
+                                    {# Le bouton n'est affiché que si un paiement validé existe #}
+                                    {% if detail.paiement and detail.paiement.est_valide %}
+                                        <a href="{% url 'gestion:generer_quittance_pdf' pk=detail.paiement.pk %}" class="btn btn-sm btn-outline-success" title="Télécharger la quittance">
+                                            <i class="fas fa-file-invoice-dollar"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                Aucune donnée de location à afficher pour la période et le filtre sélectionnés.
-                            </td>
-                        </tr>
+                        <tr><td colspan="6" class="text-center">Aucune location active à afficher pour les filtres sélectionnés.</td></tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
@@ -100,6 +105,7 @@
                             <td class="text-end text-success">{{ totals.paye|floatformat:0|intcomma }} Frcfa</td>
                             <td class="text-end text-danger">{{ totals.impaye|floatformat:0|intcomma }} Frcfa</td>
                             <td></td>
+                            <th></th>
                         </tr>
                     </tfoot>
                 </table>

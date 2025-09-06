@@ -1,0 +1,40 @@
+<form hx-get="{% url 'gestion:tableau_de_bord_agence' %}"
+      hx-target="#unit-status-wrapper"
+      hx-swap="outerHTML"
+      hx-trigger="submit, change from:select, change from:input[type='radio'], keyup[target.id=='q_unite'] changed delay:500ms, search[target.id=='q_unite']"
+      id="unit-filters-form"
+      class="mb-3">
+    <input type="hidden" name="source" value="chambres">
+    <div class="row g-2">
+        <div class="col-12 mb-2">
+            <label for="q_unite" class="form-label visually-hidden">Rechercher une unité</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="search" name="q_unite" id="q_unite" class="form-control border-start-0" placeholder="Rechercher par désignation ou adresse..." value="{{ q_unite|default:'' }}">
+            </div>
+        </div>
+        <div class="col-md-5">
+            <label for="unite_proprietaire_id" class="form-label visually-hidden">Propriétaire</label>
+            <select name="unite_proprietaire_id" id="unite_proprietaire_id" class="form-select form-select-sm">
+                <option value="">Filtrer par propriétaire</option>
+                {% for prop in all_proprietaires %}
+                    <option value="{{ prop.id }}" {% if prop.id == selected_unite_proprietaire_id %}selected{% endif %}>
+                        {{ prop.user.get_full_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-7">
+            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Filtre de statut">
+                <input type="radio" class="btn-check" name="statut" id="statut-toutes" value="toutes" autocomplete="off" {% if statut_filter == 'toutes' or not statut_filter %}checked{% endif %}>
+                <label class="btn btn-outline-secondary" for="statut-toutes">Toutes</label>
+
+                <input type="radio" class="btn-check" name="statut" id="statut-occupees" value="occupees" autocomplete="off" {% if statut_filter == 'occupees' %}checked{% endif %}>
+                <label class="btn btn-outline-secondary" for="statut-occupees">Occupées</label>
+
+                <input type="radio" class="btn-check" name="statut" id="statut-libres" value="libres" autocomplete="off" {% if statut_filter == 'libres' %}checked{% endif %}>
+                <label class="btn btn-outline-secondary" for="statut-libres">Libres</label>
+            </div>
+        </div>
+    </div>
+</form>

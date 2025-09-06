@@ -11,41 +11,42 @@
         </thead>
         <tbody>
             {% for chambre in chambres %}
+            {% with location=chambre.active_location %}
             <tr>
                 <td>
-                    <div class="fw-bold">{{ chambre.immeuble.nom }}</div>
-                    <div class="text-muted small">{{ chambre.nom }}</div>
+                    {# CORRECTION: Utilisation des bons noms de champs (addresse et designation) #}
+                    <div class="fw-bold">{{ chambre.immeuble.addresse }}</div>
+                    <div class="text-muted small">{{ chambre.designation }}</div>
                 </td>
                 <td>
-                    {% with location=chambre.active_location %}
-                        {% if location %}
-                            <i class="fas fa-user text-gray-400 me-1"></i>
-                            {{ location.locataire.get_full_name }}
-                        {% else %}
-                            <span class="text-muted fst-italic">--</span>
-                        {% endif %}
-                    {% endwith %}
+                    {% if location %}
+                        <i class="fas fa-user text-gray-400 me-1"></i>
+                        <a href="{% url 'gestion:locataire_detail' location.locataire.id %}" class="text-dark text-decoration-none" title="Voir les détails du locataire">
+                            {{ location.locataire.get_full_name|default:location.locataire.email }}
+                        </a>
+                    {% else %}
+                        <span class="text-muted fst-italic">--</span>
+                    {% endif %}
                 </td>
                 <td>
-                    {% if chambre.active_location %}
+                    {% if location %}
                         <span class="badge bg-success-soft text-success">Occupée</span>
                     {% else %}
                         <span class="badge bg-secondary-soft text-secondary">Libre</span>
                     {% endif %}
                 </td>
                 <td class="text-end">
-                    {% with location=chambre.active_location %}
-                        {% if location %}
-                            <a href="{% url 'gestion:historique_paiement_locataire' location.locataire.id %}" class="btn btn-sm btn-outline-primary" title="Voir l'historique des paiements">
-                                <i class="fas fa-history"></i>
-                            </a>
-                            <a href="{% url 'gestion:historique_paiement_locataire_mois' location.locataire.id today.year today.month %}" class="btn btn-sm btn-outline-info" title="Voir le paiement du mois en cours">
-                                <i class="fas fa-calendar-check"></i>
-                            </a>
-                        {% endif %}
-                    {% endwith %}
+                    {% if location %}
+                        <a href="{% url 'gestion:historique_paiement_locataire' location.locataire.id %}" class="btn btn-sm btn-outline-primary" title="Voir l'historique complet du locataire">
+                            <i class="fas fa-history"></i>
+                        </a>
+                        <a href="{% url 'gestion:historique_paiement_locataire_mois' location.locataire.id today.year today.month %}" class="btn btn-sm btn-outline-info" title="Voir le paiement du mois en cours">
+                            <i class="fas fa-calendar-check"></i>
+                        </a>
+                    {% endif %}
                 </td>
             </tr>
+            {% endwith %}
             {% empty %}
             <tr>
                 <td colspan="4" class="text-center py-4">
@@ -56,9 +57,3 @@
         </tbody>
     </table>
 </div>
-
-{% if page_obj and page_obj.paginator.num_pages > 1 %}
-<div class="card-footer bg-light py-2 border-top-0">
-    {% include "gestion/partials/_pagination.html" with source="chambres" %}
-</div>
-{% endif %}

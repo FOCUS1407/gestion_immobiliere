@@ -1,59 +1,64 @@
 {% extends "gestion/base.html" %}
-{% load static %}
-
-{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">{{ page_title }}</h1>
-        <a href="{% url 'gestion:locataire_detail' locataire.id %}" class="btn btn-sm btn-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Retour au profil du locataire
-        </a>
+<div class="container-fluid">
+
+    <!-- Entête de la page avec les boutons d'action -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            
+            <h1 class="h3 mb-0 text-gray-800">Historique des paiements pour {{ locataire }}</h1>
+        </div>
+        <div>
+            <a href="{% url 'gestion:locataire_detail' locataire.pk %}" class="btn btn-light btn-sm mr-3" title="Retour à la fiche du locataire">
+                <i class="fas fa-arrow-left text-primary"></i> Retour
+            </a>
+            <!--
+            <a href="{% url 'gestion:telecharger_paiements_locataire_csv' locataire.id %}" class="btn btn-info btn-sm" title="Télécharger l'historique (CSV)">
+                <i class="fas fa-file-csv fa-sm text-white-50"></i> Exporter en CSV
+            </a>
+            -->
+            <a href="{% url 'gestion:telecharger_paiements_locataire_pdf' locataire.id %}" class="btn btn-danger btn-sm" title="Télécharger l'historique (PDF)">
+                <i class="fas fa-file-pdf fa-sm text-white-50"></i> Exporter en PDF
+            </a>
+        </div>
     </div>
 
+    <!-- Tableau listant les paiements -->
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Tous les paiements enregistrés</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Liste des paiements</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Date de Paiement</th>
-                            <th>Mois Couvert</th>
-                            <th>Montant</th>
-                            <th>Immeuble / Unité</th>
-                            <th>Statut</th>
-                            <th class="text-end">Actions</th>
+                            <th>Date Paiement</th>
+                            <th>Période</th>
+                            <th>Bien Concerné</th>
+                            <th style="text-align: right;">Montant Payé</th>
+                            <th>Moyen</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for paiement in paiements_page %}
                         <tr>
-                            <td>{{ paiement.date_paiement|date:"d M. Y" }}</td>
+                            <td>{{ paiement.date_paiement|date:"d/m/Y" }}</td>
                             <td>{{ paiement.mois_couvert }}</td>
-                            <td>{{ paiement.montant|floatformat:2 }} Frcfa</td>
+                            <td>{{ paiement.location.chambre.designation }} ({{ paiement.location.chambre.immeuble.addresse }})</td>
+                            <td style="text-align: right;">{{ paiement.montant|floatformat:2 }} Frcfa</td>
+                            <td>{{ paiement.moyen_paiement.get_designation_display|default:"-" }}</td>
                             <td>
-                                {{ paiement.location.chambre.immeuble.nom }}<br>
-                                <small class="text-muted">{{ paiement.location.chambre.designation }}</small>
-                            </td>
-                            <td>
-                                {% if paiement.est_valide %}
-                                    <span class="badge bg-success-soft text-success">Validé</span>
-                                {% else %}
-                                    <span class="badge bg-warning-soft text-warning">En attente</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'gestion:modifier_paiement' paiement.id %}" class="btn btn-sm btn-outline-warning" title="Modifier"><i class="fas fa-edit"></i></a>
-                                <a href="{% url 'gestion:generer_quittance_pdf' paiement.id %}" class="btn btn-sm btn-outline-primary {% if not paiement.est_valide %}disabled{% endif %}" title="Générer Quittance"><i class="fas fa-file-pdf"></i></a>
+                                <a href="{% url 'gestion:generer_quittance_pdf' paiement.id %}" class="btn btn-sm btn-secondary" title="Voir la quittance">
+                                    <i class="fas fa-receipt"></i>
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-4">Aucun paiement n'a encore été enregistré pour ce locataire.</td>
+                            <td colspan="6" class="text-center">Aucun paiement enregistré pour ce locataire.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -63,19 +68,13 @@
             <!-- Pagination -->
             {% if paiements_page.has_other_pages %}
             <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
+                <ul class="pagination justify-content-center mt-4">
                     {% if paiements_page.has_previous %}
                         <li class="page-item"><a class="page-link" href="?page={{ paiements_page.previous_page_number }}">Précédent</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">Précédent</span></li>
                     {% endif %}
-
                     <li class="page-item disabled"><span class="page-link">Page {{ paiements_page.number }} sur {{ paiements_page.paginator.num_pages }}</span></li>
-
                     {% if paiements_page.has_next %}
                         <li class="page-item"><a class="page-link" href="?page={{ paiements_page.next_page_number }}">Suivant</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">Suivant</span></li>
                     {% endif %}
                 </ul>
             </nav>

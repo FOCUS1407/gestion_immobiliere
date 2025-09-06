@@ -1,62 +1,121 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Quittance de Loyer - {{ paiement.mois_couvert }}</title>
-    <link rel="stylesheet" href="/static/gestion/css/pdf_styles.css">
     <style>
-        .header-container {
+        /* Styles communs pour les PDF */
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+        .header, .footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            font-size: 9pt;
+        }
+        .header {
+            top: 0;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
         }
-        .agence-info { width: 50%; }
-        .locataire-info { width: 50%; text-align: right; }
-        .quittance-title { text-align: center; margin-bottom: 40px; }
-        .footer { margin-top: 60px; }
+        .header-text {
+            text-align: right;
+            color: #6c757d;
+        }
+        .logo {
+            max-height: 50px;
+            max-width: 150px;
+        }
+        .footer {
+            bottom: 0;
+            text-align: center;
+            color: #6c757d;
+        }
+        .main-content {
+            /* Marge pour ne pas être caché par l'en-tête fixe */
+            margin-top: 2.5cm;
+        }
+        h1 {
+            text-align: center;
+            color: #0d6efd;
+            margin-bottom: 30px;
+            font-size: 24pt;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 10px;
+        }
+        .details-grid {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .details-grid div { width: 48%; }
+        strong { font-weight: bold; }
+        .signature-section {
+            margin-top: 80px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
-    <div class="header-container">
-        <div class="agence-info">
+    <div class="header">
+        <div>
             {% if agence.logo %}
-                <img src="{{ agence.logo.url }}" alt="Logo Agence" style="max-width: 150px; max-height: 80px; margin-bottom: 10px;">
+                <!-- Utilisation de .path pour que WeasyPrint trouve le fichier localement -->
+                <img src="{{ agence.logo.path }}" alt="Logo Agence" class="logo">
             {% endif %}
-            <h4>{{ agence.user.get_full_name }}</h4>
-            <p>{{ agence.user.addresse|linebreaksbr }}</p>
-            <p>Tél: {{ agence.user.telephone }}</p>
-            <p>Email: {{ agence.user.email }}</p>
         </div>
-        <div class="locataire-info">
-            <h4>Destinataire</h4>
-            <p><strong>{{ locataire }}</strong></p>
-            <p>{{ chambre.immeuble.addresse|linebreaksbr }}</p>
-            <p>Unité: {{ chambre.designation }}</p>
+        <div class="header-text">
+            <div style="font-weight: bold;">{{ agence.user.get_full_name }}</div>
+            {% if agence.user.addresse %}<div>{{ agence.user.addresse|linebreaksbr }}</div>{% endif %}
+            {% if agence.user.telephone %}<div>Tél : {{ agence.user.telephone }}</div>{% endif %}
+            {% if agence.user.email %}<div>Email : {{ agence.user.email }}</div>{% endif %}
         </div>
     </div>
-
-    <div class="quittance-title">
-        <h1>Quittance de Loyer</h1>
-    </div>
-
-    <p>Reçu de <strong>{{ locataire }}</strong>, la somme de <strong>{{ paiement.montant|floatformat:0 }} Frcfa</strong> pour le paiement du loyer du mois de <strong>{{ paiement.mois_couvert }}</strong>.</p>
-    <p>Ce paiement concerne le logement situé à l'adresse : <strong>{{ immeuble.addresse }}</strong>, unité <strong>{{ chambre.designation }}</strong>.</p>
-
-    <table class="table">
-        <tr>
-            <th>Date du paiement</th>
-            <td>{{ paiement.date_paiement|date:"d F Y" }}</td>
-        </tr>
-        <tr>
-            <th>Moyen de paiement</th>
-            <td>{{ paiement.moyen_paiement }}</td>
-        </tr>
-    </table>
 
     <div class="footer">
-        <p>Fait à Lomé, le {{ date_generation|date:"d F Y" }}</p>
-        <p style="margin-top: 50px;">Pour l'agence, Signature et Cachet</p>
+        Quittance générée par RentSolution le {{ date_generation|date:"d/m/Y" }}
+    </div>
+
+    <div class="main-content">
+        <h1>Quittance de Loyer</h1>
+
+        <div class="details-grid">
+            <div>
+                <strong>Bailleur (via mandataire)</strong><br>
+                {{ agence.user.get_full_name }}<br>
+                {{ agence.user.addresse|linebreaksbr }}
+            </div>
+            <div>
+                <strong>Locataire</strong><br>
+                {{ locataire }}<br>
+                {{ immeuble.addresse }}<br>
+                Unité : {{ chambre.designation }}
+            </div>
+        </div>
+
+        <p>Je soussigné, <strong>{{ agence.user.get_full_name }}</strong>, agissant en tant que mandataire du propriétaire, déclare avoir reçu de <strong>{{ locataire }}</strong> la somme de <strong>{{ paiement.montant|floatformat:0 }} Frcfa</strong> pour le paiement du loyer et des charges concernant la période du <strong>{{ paiement.mois_couvert }}</strong>.</p>
+        <p>Ce paiement a été effectué le <strong>{{ paiement.date_paiement|date:"d F Y" }}</strong> par <strong>{{ paiement.moyen_paiement.get_designation_display }}</strong>.</p>
+        <p>Cette quittance annule tous les reçus qui auraient pu être donnés précédemment pour cette même période. Sous réserve de tous les droits du bailleur.</p>
+
+        <div class="signature-section">
+            <p>Fait à Lomé, le {{ date_generation|date:"d F Y" }}</p>
+            <p style="margin-top: 50px;">Pour l'agence, Signature et Cachet</p>
+        </div>
     </div>
 </body>
 </html>
