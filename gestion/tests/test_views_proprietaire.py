@@ -146,3 +146,82 @@ class ModifierProprietaireViewTest(TestCase):
         # Vérifier que le message d'erreur de l'email est bien présent
         self.assertContains(response, "Saisissez une adresse e-mail valide.")
 
+    def test_invalid_post_on_profile_form_rerenders_with_errors(self):
+        """
+        Vérifie qu'une soumission invalide sur le formulaire de profil (ex: taux invalide)
+        ne met à jour aucune donnée et affiche une erreur.
+        """
+        self.client.login(username='agence1', password='password123')
+
+        original_first_name = self.proprietaire_user.first_name
+
+        post_data = {
+            'first_name': 'DonneeValide', # Donnée valide pour le user_form
+            'last_name': 'Dupont',
+            'email': 'jean.dupont@test.com',
+            'telephone': '0102030405',
+            'addresse': '123 Rue de la Forme',
+            'taux_commission': 'taux-invalide', # Donnée invalide pour le profile_form
+            'date_debut_contrat': '2023-01-01',
+            'duree_contrat': '12',
+        }
+        response = self.client.post(self.url, data=post_data)
+
+        self.assertEqual(response.status_code, 200) # Pas de redirection
+        self.assertFormError(response, 'profile_form', 'taux_commission', 'Saisissez un nombre.')
+        # Vérifier que les données du premier formulaire n'ont pas été sauvegardées
+        self.proprietaire_user.refresh_from_db()
+        self.assertEqual(self.proprietaire_user.first_name, original_first_name)
+
+class SupprimerProprietaireViewTest(TestCase):
+    """
+    Tests pour la vue `supprimer_proprietaire`.
+    """
+    @classmethod
+    def setUpTestData(cls):
+        # Agence 1 et son propriétaire à supprimer
+        cls.agence_user = User.objects.create_user(username='agence_del', password='password123', user_type='AG')
+        cls.agence = Agence.objects.create(user=cls.agence_user)
+        
+        cls.proprietaire_a_supprimer_user = User.objects.create_user(
+            username='proprio_del', password='password123', user_type='PR',
+            first_name="ASupprimer", last_name="Test"
+        )
+        Proprietaire.objects.create(user=cls.proprietaire_a_supprimer_user, agence=cls.agence, taux_commission=5)
+
+        # Agence 2 (pour tester les accès non autorisés)
+        cls.autre_agence_user = User.objects.create_user(username='agence_autre', password='password123', user_type='AG')
+        Agence.objects.create(user=cls.autre_agence_user)
+
+        cls.url = reverse('gestion:supprimer_proprietaire', kwargs={'pk': cls.proprietaire_a_supprimer_user.pk})
+
+    def test_permission_denied_for_other_agence(self):
+        """Vérifie qu'une autre agence ne peut pas accéder à la page de suppression."""
+        self.client.login(username='agence_autre', password='password123')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_confirmation_page(self):
+        """Vérifie que la page de confirmation s'affiche correctement pour la bonne agence."""
+        self.client.login(username='agence_del', password='password123')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'gestion/proprietaire_confirm_delete.html')
+        self.assertContains(response, "Confirmer la suppression")
+        self.assertContains(response, "ASupprimer Test")
+
+    def test_successful_post_deletes_owner_and_redirects(self):
+        """Vérifie qu'une soumission valide supprime le propriétaire et redirige."""
+        self.client.login(username='agence_del', password='password123')
+        
+        proprietaire_pk = self.proprietaire_a_supprimer_user.pk
+        self.assertTrue(User.objects.filter(pk=proprietaire_pk).exists())
+
+        response = self.client.post(self.url)
+
+        self.assertRedirects(response, reverse('gestion:tableau_de_bord_agence'))
+        self.assertFalse(User.objects.filter(pk=proprietaire_pk).exists())
+
+        # Vérifier que le message de succès est affiché après la redirection
+        response_redirected = self.client.get(reverse('gestion:tableau_de_bord_agence'))
+        self.assertContains(response_redirected, "Le propriétaire 'ASupprimer Test' et toutes ses données associées ont été supprimés.")

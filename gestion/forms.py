@@ -271,18 +271,48 @@ class LocationForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control'
 
 class LocataireForm(forms.ModelForm):
+    """
+    Formulaire optimisé pour la création et la modification d'un locataire.
+    Hérite des contraintes du modèle et améliore l'expérience utilisateur.
+    """
     class Meta:
         model = Locataire
         exclude = ['agence']
-
+        labels = {
+            'nom': "Nom de famille",
+            'prenom': "Prénom(s)",
+            'telephone': "Numéro de téléphone",
+            'email': "Adresse e-mail (optionnel)",
+            'raison_sociale': "Raison sociale (si entreprise)",
+            'caution': "Montant de la caution (Frcfa)",
+        }
+        widgets = {
+            'nom': forms.TextInput(attrs={'placeholder': 'Ex: Dupont'}),
+            'prenom': forms.TextInput(attrs={'placeholder': 'Ex: Marie'}),
+            'telephone': forms.TextInput(attrs={'placeholder': 'Ex: 771234567'}),
+            'email': forms.EmailInput(attrs={'placeholder': 'ex: marie.dupont@email.com'}),
+            'raison_sociale': forms.TextInput(attrs={'placeholder': 'Ex: Entreprise SARL'}),
+            'caution': forms.NumberInput(attrs={'placeholder': 'Ex: 100000'}),
+        }
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
-            field.required = False # Rendre tous les champs optionnels sauf si spécifié dans le modèle
-        self.fields['nom'].required = True
-        self.fields['prenom'].required = True
-        self.fields['telephone'].required = True
+            # Appliquer la classe 'form-control' à tous les champs
+            cls = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{cls} form-control'.strip()
+            
+    def clean_telephone(self):
+        """Nettoie et valide le numéro de téléphone pour ne garder que les chiffres."""
+        telephone = self.cleaned_data.get('telephone')
+        if telephone:
+            # Supprime tous les caractères qui ne sont pas des chiffres
+            cleaned_phone = ''.join(filter(str.isdigit, telephone))
+            if not cleaned_phone:
+                raise forms.ValidationError("Le numéro de téléphone doit contenir des chiffres.")
+            return cleaned_phone
+        return telephone
+
 
 class ImmeubleForm(forms.ModelForm):
     """Formulaire pour créer ou modifier un immeuble."""
