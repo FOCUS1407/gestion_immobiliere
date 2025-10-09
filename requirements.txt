@@ -1,14 +1,21 @@
 # Django Framework
 Django>=5.2,<5.3
 
+# Serveur d'application WSGI pour la production
+gunicorn
+
 # Connecteur de base de données
 psycopg2-binary
 
 # Variables d'environnement
 python-dotenv
 
+# Utilitaires pour la configuration en production
+dj-database-url
+
 # Add-ons et Utilitaires Django
 django-widget-tweaks
 Pillow
 weasyprint
 python-dateutil
+whitenoise

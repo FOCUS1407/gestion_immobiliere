@@ -1,9 +1,27 @@
+# Fichiers de Bytecode Python
+__pycache__/
+*.pyc
+
 # Fichiers de dépendances Python
 venv/
-__pycache__/
+
+# Fichiers générés par Django
+staticfiles/
+media/
 
 # Fichiers de base de données
 *.sqlite3
 
 # Fichiers d'environnement
 .env
+
+# Fichiers de log
+*.log
+
+# Fichiers de configuration des éditeurs
+.vscode/
+.idea/
+
+# Fichiers système
+.DS_Store
+Thumbs.db

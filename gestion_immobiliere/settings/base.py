@@ -10,10 +10,10 @@ load_dotenv()
 # Le chemin de base est maintenant 3 niveaux plus haut car ce fichier est dans settings/
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# --- DIAGNOSTIC ---
-# Nous forçons DEBUG à True pour nous assurer que le serveur de développement
-# sert bien les fichiers statiques.
-DEBUG = True
+# SECURITY WARNING: don't run with debug turned on in production!
+# La valeur par défaut est False. Elle sera surchargée à True dans development.py.
+DEBUG = False
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,6 +30,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
