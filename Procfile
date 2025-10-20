@@ -1,2 +1,2 @@
-release: python manage.py migrate --settings=gestion_immobiliere.settings.production
-web: gunicorn gestion_immobiliere.wsgi
+release: python manage.py migrate
+web: gunicorn gestion_immobiliere.wsgi --log-file -

@@ -145,6 +145,9 @@ class ImmeubleManagementTest(BaseTestCase):
         response_agence = self.client.get(url)
         self.assertEqual(response_agence.status_code, 200)
 
+        # Se déconnecter pour garantir un test propre
+        self.client.logout()
+
         # Accès par le propriétaire
         self.client.login(username='proprio_test', password='password123')
         response_proprio = self.client.get(url)

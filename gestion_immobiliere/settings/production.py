@@ -6,22 +6,32 @@ from django.core.exceptions import ImproperlyConfigured
 # Les paramètres ci-dessous sont spécifiques à l'environnement de PRODUCTION.
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ImproperlyConfigured("La variable d'environnement SECRET_KEY n'est pas définie pour la production.")
-
 # DEBUG est déjà à False dans base.py, donc pas besoin de le redéfinir.
 
 # Configurez les hôtes autorisés pour votre domaine de production.
 # Ne PAS utiliser ['*'] en production !
 # Railway fournit un domaine par défaut. On l'ajoute, ainsi que votre domaine personnalisé.
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = []
+
+# Récupérer les hôtes depuis la variable d'environnement, s'ils existent.
+allowed_hosts_str = os.getenv('ALLOWED_HOSTS')
+if allowed_hosts_str:
+    ALLOWED_HOSTS.extend(allowed_hosts_str.split(','))
+
+# Railway injecte une variable d'environnement pour son domaine de service.
+# C'est une bonne pratique de l'ajouter si elle existe.
+railway_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN')
+if railway_hostname:
+    ALLOWED_HOSTS.append(railway_hostname)
 
 # Base de données pour la production
 # Railway fournit une variable DATABASE_URL. dj-database-url la parse pour nous.
 DATABASES = {
     'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
 }
+
+# Insérer WhiteNoiseMiddleware juste après SecurityMiddleware
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # Paramètres de sécurité pour HTTPS
 CSRF_COOKIE_SECURE = True

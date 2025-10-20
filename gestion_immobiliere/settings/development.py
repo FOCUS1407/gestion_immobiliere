@@ -1,13 +1,7 @@
 import os
 from .base import * # Importe tous les paramètres communs
-from django.core.exceptions import ImproperlyConfigured
 
 # Les paramètres ci-dessous sont spécifiques à l'environnement de DÉVELOPPEMENT.
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ImproperlyConfigured("La variable d'environnement SECRET_KEY n'est pas définie.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
