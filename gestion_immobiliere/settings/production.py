@@ -41,6 +41,10 @@ SECURE_SSL_REDIRECT = True
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Le répertoire où `collectstatic` va rassembler tous les fichiers statiques.
+# WhiteNoise utilisera ce répertoire pour servir les fichiers.
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # Configuration des emails pour la production (déjà dans base.py, mais vérifiez les variables d'environnement)
 if not os.getenv('EMAIL_HOST_USER') or not os.getenv('EMAIL_HOST_PASSWORD'):
     raise ImproperlyConfigured("Les variables d'environnement pour l'email ne sont pas configurées pour la production.")
