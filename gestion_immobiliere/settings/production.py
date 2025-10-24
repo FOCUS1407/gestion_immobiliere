@@ -29,8 +29,14 @@ if railway_hostname:
 ALLOWED_HOSTS = list(ALLOWED_HOSTS)
 # Base de données pour la production
 # Railway fournit une variable DATABASE_URL. dj-database-url la parse pour nous.
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL:
+    raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
+
 DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    'default': dj_database_url.config(
+        conn_max_age=600, ssl_require=True
+    )
 }
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
