@@ -11,19 +11,22 @@ from django.core.exceptions import ImproperlyConfigured
 # Configurez les hôtes autorisés pour votre domaine de production.
 # Ne PAS utiliser ['*'] en production !
 # Railway fournit un domaine par défaut. On l'ajoute, ainsi que votre domaine personnalisé.
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['gestionimmobiliere-production-4e3e.up.railway.app', 'localhost']
 
 # Récupérer les hôtes depuis la variable d'environnement, s'ils existent.
 allowed_hosts_str = os.getenv('ALLOWED_HOSTS')
 if allowed_hosts_str:
-    ALLOWED_HOSTS.extend(allowed_hosts_str.split(','))
+    # Nettoie les espaces et ajoute les hôtes à un ensemble pour éviter les doublons
+    hosts = [host.strip() for host in allowed_hosts_str.split(',')]
+    ALLOWED_HOSTS.update(hosts)
 
 # Railway injecte une variable d'environnement pour son domaine de service.
 # C'est une bonne pratique de l'ajouter si elle existe.
 railway_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN')
 if railway_hostname:
-    ALLOWED_HOSTS.append(railway_hostname)
+    ALLOWED_HOSTS.add(railway_hostname)
 
+ALLOWED_HOSTS = list(ALLOWED_HOSTS)
 # Base de données pour la production
 # Railway fournit une variable DATABASE_URL. dj-database-url la parse pour nous.
 DATABASES = {
