@@ -1,0 +1,9 @@
+# nixpacks.toml
+
+[phases.setup]
+# Ajoute les paquets système (bibliothèques) nécessaires pour WeasyPrint sur un environnement Debian/Ubuntu.
+aptPkgs = [
+    "libpango-1.0-0",
+    "libpangoft2-1.0-0",
+    "libffi-dev",
+]
