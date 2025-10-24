@@ -11,7 +11,7 @@ from django.core.exceptions import ImproperlyConfigured
 # Configurez les hôtes autorisés pour votre domaine de production.
 # Ne PAS utiliser ['*'] en production !
 # Railway fournit un domaine par défaut. On l'ajoute, ainsi que votre domaine personnalisé.
-ALLOWED_HOSTS = ['gestionimmobiliere-production-4e3e.up.railway.app', 'localhost']
+ALLOWED_HOSTS = set()
 
 # Récupérer les hôtes depuis la variable d'environnement, s'ils existent.
 allowed_hosts_str = os.getenv('ALLOWED_HOSTS')
