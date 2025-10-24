@@ -8,7 +8,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'gestionimmobiliere-production-3fff.up.railway.app']
 
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'https://gestionimmobiliere-production-3fff.up.railway.app')
+CSRF_TRUSTED_ORIGINS = ['https://gestionimmobiliere-production-3fff.up.railway.app']
 
 # Base de données pour le développement
 DATABASES = {
