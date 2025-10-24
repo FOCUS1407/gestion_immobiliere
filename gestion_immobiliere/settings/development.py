@@ -6,9 +6,9 @@ from .base import * # Importe tous les paramètres communs
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'gestionimmobiliere-production-3fff.up.railway.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-CSRF_TRUSTED_ORIGINS = ['https://gestionimmobiliere-production-3fff.up.railway.app']
+# Pas besoin de CSRF_TRUSTED_ORIGINS en développement local avec DEBUG=True
 
 # Base de données pour le développement
 DATABASES = {

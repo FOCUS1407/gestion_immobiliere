@@ -33,13 +33,23 @@ DATABASES = {
     'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
 }
 
+# --- Configuration pour le Reverse Proxy (Railway) ---
+# Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.
+# C'est essentiel pour que SECURE_SSL_REDIRECT fonctionne correctement.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Insérer WhiteNoiseMiddleware juste après SecurityMiddleware
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # Paramètres de sécurité pour HTTPS
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
+# Redirige tout le trafic HTTP vers HTTPS.
 SECURE_SSL_REDIRECT = True
+
+# Domaines de confiance pour les requêtes CSRF (connexion, formulaires, etc.)
+# On utilise la même logique que pour ALLOWED_HOSTS.
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
