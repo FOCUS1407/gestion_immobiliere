@@ -9,5 +9,6 @@ nixPkgs = [
     "pkgs.pango",
     "pkgs.gdk-pixbuf",
     "pkgs.libffi",
-    "pkgs.shared-mime-info"
+    "pkgs.shared-mime-info",
+    "pkgs.pkg-config",
 ]
