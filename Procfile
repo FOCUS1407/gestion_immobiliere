@@ -1,2 +1,2 @@
-release: python manage.py migrate
-web: mkdir -p staticfiles && gunicorn gestion_immobiliere.wsgi --log-file -
+release: python manage.py collectstatic --no-input && python manage.py migrate
+web: gunicorn gestion_immobiliere.wsgi
