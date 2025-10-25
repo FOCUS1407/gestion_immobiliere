@@ -1,30 +1,13 @@
 # nixpacks.toml
 
 [phases.setup]
-aptPkgs = [
-    "build-essential",
-    "python3-dev",
-    "libffi-dev",
-    "pkg-config",
-    "libcairo2-dev",
-    "libpango1.0-dev",
-    "libpango-1.0-0",
-    "libgdk-pixbuf-2.0-dev",
-    "shared-mime-info",
-    "libgobject-2.0-0"
-]   
-
+# Ajoute les paquets système nécessaires pour WeasyPrint en utilisant le gestionnaire de paquets Nix.
+# C'est une méthode plus robuste pour les dépendances complexes.
 nixPkgs = [
     "...", # Indique à Nixpacks de conserver les paquets par défaut
     "pkgs.cairo",
     "pkgs.pango",
     "pkgs.gdk-pixbuf",
     "pkgs.libffi",
-]    
-**Pourquoi ce changement est-il plus efficace ?**
-*   **Plus fiable :** Le gestionnaire de paquets Nix est conçu pour créer des environnements reproductibles. Il gère lui-même les chemins des bibliothèques (`LD_LIBRARY_PATH`), ce qui élimine la source la plus probable de l'erreur.
-*   **Plus simple :** Au lieu de deviner les paquets `-dev` et d'exécution, nous spécifions les bibliothèques de haut niveau (`cairo`, `pango`, etc.), et Nix se charge de résoudre toutes les sous-dépendances nécessaires, y compris `libgobject-2.0-0`.
-*   **`"..."`** : Cette ligne est importante. Elle indique à Nixpacks de ne pas écraser la liste de paquets par défaut (qui contient des outils essentiels comme `gcc`) mais d'y ajouter les nôtres.
-
-
-    
+    "pkgs.shared-mime-info"
+]
