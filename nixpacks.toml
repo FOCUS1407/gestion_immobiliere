@@ -1,0 +1,14 @@
+# nixpacks.toml
+
+[phases.setup]
+# Ajoute les paquets système (bibliothèques) nécessaires pour WeasyPrint sur un environnement Debian/Ubuntu.
+# Inclut les paquets de développement (-dev) pour la compilation des extensions C.
+aptPkgs = [
+   "build-essential",
+   "python3-dev",
+   "libffi-dev",
+   "pkg-config",
+   "libcairo2-dev",
+   "libpango1.0-dev",
+   "libgdk-pixbuf-2.0-dev"
+]
