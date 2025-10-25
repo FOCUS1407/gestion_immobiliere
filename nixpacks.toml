@@ -11,6 +11,6 @@ aptPkgs = [
    "libcairo2-dev",
    "libpango1.0-dev",
    "libgdk-pixbuf-2.0-dev",
-   "shared-mime-info"
-   
+   "shared-mime-info",
+   "libgobject-2.0-0"
 ]
