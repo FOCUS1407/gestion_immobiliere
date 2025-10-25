@@ -1,2 +1,2 @@
-release: python manage.py collectstatic --no-input && python manage.py migrate
-web: gunicorn gestion_immobiliere.wsgi
+release: python manage.py migrate --no-input
+web: python manage.py collectstatic --no-input && gunicorn gestion_immobiliere.wsgi
