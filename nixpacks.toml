@@ -3,7 +3,9 @@
 [phases.setup]
 # Ajoute les paquets système (bibliothèques) nécessaires pour WeasyPrint sur un environnement Debian/Ubuntu.
 aptPkgs = [
-    "libpango-1.0-0",
-    "libpangoft2-1.0-0",
-    "libffi-dev",
+   "build-essential",
+   "libgobject-2.0-0",
+   "libpango-1.0-0",
+   "libpangoft2-1.0-0",
+   "libffi-dev",   
 ]
