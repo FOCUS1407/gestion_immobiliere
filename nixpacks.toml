@@ -5,10 +5,11 @@
 # C'est une méthode plus robuste pour les dépendances complexes.
 nixPkgs = [
     "...", # Indique à Nixpacks de conserver les paquets par défaut
+    "pkgs.glib",
     "pkgs.cairo",
     "pkgs.pango",
     "pkgs.gdk-pixbuf",
     "pkgs.libffi",
     "pkgs.shared-mime-info",
     "pkgs.pkg-config",
-]
+]+LD_LIBRARY_PATH = "${NIX_PACKS_STANDARD_INPUT_LIBS}"
