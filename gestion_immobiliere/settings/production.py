@@ -62,8 +62,9 @@ SESSION_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
 
 # Domaines de confiance pour les requêtes CSRF (connexion, formulaires, etc.)
-# On utilise la même logique que pour ALLOWED_HOSTS.
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+# Ne configurer que si nous ne sommes pas en phase de construction.
+if 'collectstatic' not in sys.argv:
+    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
