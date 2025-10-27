@@ -20,6 +20,7 @@ RUN apt-get update \
     # Dépendances pour psycopg (PostgreSQL)
     libpq-dev postgresql-client \
     build-essential \
+    dos2unix \
     libcairo2 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
@@ -50,5 +51,8 @@ EXPOSE 8000
 
 # Copier le script d'entrée et le rendre exécutable
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+# Utiliser dos2unix pour s'assurer que les fins de ligne sont correctes (LF)
+RUN dos2unix /app/docker-entrypoint.sh
+# Rendre le script exécutable
 RUN chmod +x /app/docker-entrypoint.sh
 CMD ["/app/docker-entrypoint.sh"]
