@@ -24,7 +24,7 @@ echo "Starting Gunicorn server with Gunicorn..."
 # Ajout de --timeout pour éviter un arrêt prématuré si le démarrage est lent
 # Ajout de --workers pour une meilleure performance (ajuster selon les ressources)
 # Ajout de --chdir /app pour s'assurer que Gunicorn s'exécute dans le bon répertoire
-exec gunicorn --chdir /app gestion_immobiliere.wsgi:application --bind 0.0.0.0:8080 --log-level debug --timeout 120 --workers 2
+exec gunicorn --chdir /app gestion_immobiliere.wsgi:application --bind 0.0.0.0:$PORT --log-level debug --timeout 120 --workers 2
 
 # --- Fin du script d'entrée (ne devrait pas être atteint si Gunicorn démarre) ---
 echo "--- Fin inattendue de docker-entrypoint.sh ---"
