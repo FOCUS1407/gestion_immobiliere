@@ -18,8 +18,9 @@ class ConnexionForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update(
-            {'class': 'form-control form-control-lg', 'placeholder': "Nom d'utilisateur"}
+            {'class': 'form-control form-control-lg', 'placeholder': "Email"}
         )
+        self.fields['username'].label = "Adresse email"
         self.fields['password'].widget.attrs.update(
             {'class': 'form-control form-control-lg', 'placeholder': 'Mot de passe'}
         )
