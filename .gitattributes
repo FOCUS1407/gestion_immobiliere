@@ -6,3 +6,6 @@
 
 # Forcer également les fins de ligne LF pour les fichiers Python pour la cohérence.
 *.py eol=lf
+
+# S'assurer que le fichier .gitattributes lui-même a des fins de ligne LF.
+.gitattributes text eol=lf
