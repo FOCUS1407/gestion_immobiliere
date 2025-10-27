@@ -36,6 +36,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le reste du code de l'application
 COPY . /app/
 
+# Lancer collectstatic pour rassembler tous les fichiers statiques
+# La variable d'environnement DJANGO_SETTINGS_MODULE est nécessaire pour que manage.py sache quels paramètres utiliser.
+ENV DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production
+RUN python manage.py collectstatic --noinput
+
 # Exposer le port sur lequel Django s'exécute (par défaut 8000)
 EXPOSE 8000
 
