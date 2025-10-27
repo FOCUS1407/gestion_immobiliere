@@ -10,11 +10,10 @@ def main():
     # Ceci doit être fait AVANT d'accéder à os.environ.
     load_dotenv()
 
-    # Définit le fichier de configuration à utiliser.
-    # La variable DJANGO_SETTINGS_MODULE dans le fichier .env aura la priorité.
-    # Si elle n'est pas définie, on utilise 'development' par défaut.
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                          'gestion_immobiliere.settings.development')
+    # En production, DJANGO_SETTINGS_MODULE sera fourni par Gunicorn ou une variable d'environnement.
+    # En développement, il est défini dans le fichier .env ou par votre IDE.
+    # Nous n'avons plus besoin de `setdefault` ici, ce qui rend le code plus propre et moins sujet aux erreurs.
+    # Assurez-vous que votre .env local contient : DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.development
 
     try:
         from django.core.management import execute_from_command_line
