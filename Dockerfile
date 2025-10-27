@@ -2,7 +2,7 @@
 # Choisissez une version de Python qui correspond à celle de votre environnement de développement.
 # Par exemple, python:3.10-slim-buster pour Debian 10 (Buster) ou python:3.11-slim-bullseye pour Debian 11 (Bullseye).
 # L'image 'slim' est plus légère et contient le strict minimum.
-FROM python:3.10.1-slim-slim-bullseye
+FROM python:3.11-slim-bullseye
 
 # Définir l'encodage pour éviter les problèmes de locale
 ENV LANG C.UTF-8
