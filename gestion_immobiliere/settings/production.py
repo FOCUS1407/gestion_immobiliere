@@ -1,5 +1,6 @@
 import os
 from .base import *  # Importe tous les paramètres communs
+import sys
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
@@ -27,17 +28,20 @@ if railway_hostname:
     ALLOWED_HOSTS.add(railway_hostname)
 
 ALLOWED_HOSTS = list(ALLOWED_HOSTS)
-# Base de données pour la production
-# Railway fournit une variable DATABASE_URL. dj-database-url la parse pour nous.
-DATABASE_URL = os.getenv('DATABASE_URL')
-if not DATABASE_URL:
-    raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
 
-DATABASES = {
-    'default': dj_database_url.config(
-        conn_max_age=600, ssl_require=True
-    )
-}
+# --- Configuration de la base de données ---
+# Si nous sommes en train d'exécuter `collectstatic`, nous n'avons pas besoin de la base de données.
+# Cela permet à la construction Docker de fonctionner sans les secrets de production.
+if 'collectstatic' in sys.argv:
+    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': 'db.sqlite3'}}
+else:
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    if not DATABASE_URL:
+        raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
+
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    }
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
 # Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.
@@ -65,5 +69,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Configuration des emails pour la production (déjà dans base.py, mais vérifiez les variables d'environnement)
-if not os.getenv('EMAIL_HOST_USER') or not os.getenv('EMAIL_HOST_PASSWORD'):
-    raise ImproperlyConfigured("Les variables d'environnement pour l'email ne sont pas configurées pour la production.")
+if 'collectstatic' not in sys.argv:
+    if not os.getenv('EMAIL_HOST_USER') or not os.getenv('EMAIL_HOST_PASSWORD'):
+        raise ImproperlyConfigured("Les variables d'environnement pour l'email ne sont pas configurées pour la production.")
