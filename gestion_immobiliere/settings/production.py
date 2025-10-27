@@ -29,6 +29,10 @@ if railway_hostname:
 
 ALLOWED_HOSTS = list(ALLOWED_HOSTS)
 
+# S'assurer que ALLOWED_HOSTS n'est jamais vide en production
+if not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("La liste ALLOWED_HOSTS ne peut pas être vide en production. Définissez la variable d'environnement ALLOWED_HOSTS ou RAILWAY_PUBLIC_DOMAIN.")
+
 # --- Configuration de la base de données ---
 # Si nous sommes en train d'exécuter `collectstatic`, nous n'avons pas besoin de la base de données.
 # Cela permet à la construction Docker de fonctionner sans les secrets de production.
