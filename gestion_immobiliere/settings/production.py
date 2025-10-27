@@ -62,9 +62,12 @@ SESSION_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
 
 # Domaines de confiance pour les requêtes CSRF (connexion, formulaires, etc.)
-# Ne configurer que si nous ne sommes pas en phase de construction.
 if 'collectstatic' not in sys.argv:
     CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+else:
+    # Pendant collectstatic, on peut le laisser vide car il ne sera pas utilisé.
+    # Django 4.0+ lève une ImproperlyConfigured si CSRF_TRUSTED_ORIGINS est vide et CSRF_COOKIE_SECURE est True en non-DEBUG.
+    CSRF_TRUSTED_ORIGINS = []
 
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
