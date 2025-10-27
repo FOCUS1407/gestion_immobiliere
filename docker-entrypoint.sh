@@ -15,7 +15,6 @@ echo "--- Fin des variables d'environnement ---"
 # Appliquer les migrations de la base de données
 echo "Applying database migrations..."
 python manage.py migrate
-python manage.py migrate || { echo "ERROR: Database migrations failed!"; exit 1; }
 echo "Database migrations applied successfully."
 
 # Démarrer le serveur Gunicorn

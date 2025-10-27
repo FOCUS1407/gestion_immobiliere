@@ -28,15 +28,10 @@ RUN apt-get update \
     gir1.2-gtk-3.0 \
     libgirepository-1.0-1 \
     && rm -rf /var/lib/apt/lists/*
-# AJOUTEZ CECI POUR LE DÉBOGAGE
-RUN echo "--- Paquets APT installés ---" && dpkg -l && echo "--- Fin des paquets APT ---"    
 
 # Copier les fichiers de dépendances Python et les installer
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
-
-# AJOUTEZ CECI POUR LE DÉBOGAGE
-RUN echo "--- Paquets PIP installés ---" && pip freeze && echo "--- Fin des paquets PIP ---"
 
 # Copier le reste du code de l'application
 COPY . /app/
