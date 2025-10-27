@@ -1,31 +1,18 @@
 #!/bin/sh
 
 # Arrête le script si une commande échoue
-# Pour un débogage extrême, décommenter la ligne suivante pour voir chaque commande exécutée
-set -x # <--- AJOUTEZ CETTE LIGNE POUR UN DÉBOGAGE TRÈS VERBEUX
 set -e
 
-# Afficher les variables d'environnement pour le débogage (ATTENTION : ne pas laisser en production avec des secrets)
-echo "--- Début de docker-entrypoint.sh ---"
-
-# Afficher les variables d'environnement pour le débogage
-echo "--- Variables d'environnement au démarrage ---"
-env
-echo "--- Fin des variables d'environnement ---"
-
 # Appliquer les migrations de la base de données
-echo "Applying database migrations with DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production..."
-DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production python manage.py migrate # <--- MODIFICATION ICI
+echo "Applying database migrations..."
+python manage.py migrate
 echo "Database migrations applied successfully."
 
 # Démarrer le serveur Gunicorn
 # 'exec' remplace le processus shell par Gunicorn, ce qui est une bonne pratique.
 echo "Starting Gunicorn server with Gunicorn..."
-# Ajout de --log-level debug pour plus de détails dans les logs
-# Ajout de --timeout pour éviter un arrêt prématuré si le démarrage est lent
-# Ajout de --workers pour une meilleure performance (ajuster selon les ressources)
-# Ajout de --chdir /app pour s'assurer que Gunicorn s'exécute dans le bon répertoire
-exec gunicorn --chdir /app --env DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production gestion_immobiliere.wsgi:application --bind 0.0.0.0:$PORT --log-level debug --timeout 120 --workers 2
+# Utilisation de --log-level info pour des logs plus concis en production
+# Les autres options sont conservées pour la performance et la robustesse
+exec gunicorn --chdir /app gestion_immobiliere.wsgi:application --bind 0.0.0.0:$PORT --log-level info --timeout 120 --workers 2
 
 # --- Fin du script d'entrée (ne devrait pas être atteint si Gunicorn démarre) ---
-echo "--- Fin inattendue de docker-entrypoint.sh ---"
