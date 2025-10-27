@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
@@ -11,9 +12,12 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise ImproperlyConfigured("La variable d'environnement SECRET_KEY n'est pas définie.")
+SECRET_KEY = os.getenv('SECRET_KEY', 'dummy-key-for-build')
+
+# Ne pas exiger de clé secrète pendant la phase de construction (collectstatic)
+if 'collectstatic' not in sys.argv:
+    if SECRET_KEY == 'dummy-key-for-build' and not os.getenv('SECRET_KEY'):
+        raise ImproperlyConfigured("La variable d'environnement SECRET_KEY n'est pas définie pour l'exécution.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # La valeur par défaut est False. Elle sera surchargée à True dans development.py.
