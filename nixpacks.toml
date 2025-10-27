@@ -12,4 +12,4 @@ nixPkgs = [
     "pkgs.libffi",
     "pkgs.shared-mime-info",
     "pkgs.pkg-config",
-]+LD_LIBRARY_PATH = "${NIX_PACKS_STANDARD_INPUT_LIBS}"
+]
