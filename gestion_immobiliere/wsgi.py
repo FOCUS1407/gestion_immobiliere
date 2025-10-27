@@ -11,7 +11,4 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-# En production, vous changerez peut-être ceci pour 'gestion_immobiliere.settings.production'
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_immobiliere.settings.development')
-
 application = get_wsgi_application()
