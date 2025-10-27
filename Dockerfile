@@ -17,16 +17,16 @@ WORKDIR /app
 # build-essential est utile pour compiler certaines dépendances Python si nécessaire.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        # Dépendances pour psycopg (PostgreSQL)
-        libpq-dev postgresql-client \
-        build-essential \
-        libcairo2 \
-        libpango-1.0-0 \
-        libpangocairo-1.0-0 \
-        libgdk-pixbuf2.0-0 \
-        libffi-dev \
-        gir1.2-gtk-3.0 \
-        libgirepository-1.0-1 \
+    # Dépendances pour psycopg (PostgreSQL)
+    libpq-dev postgresql-client \
+    build-essential \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libgdk-pixbuf2.0-0 \
+    libffi-dev \
+    gir1.2-gtk-3.0 \
+    libgirepository-1.0-1 \
     && rm -rf /var/lib/apt/lists/*
 # AJOUTEZ CECI POUR LE DÉBOGAGE
 RUN echo "--- Paquets APT installés ---" && dpkg -l && echo "--- Fin des paquets APT ---"    
@@ -52,4 +52,8 @@ EXPOSE 8000
 # Commande pour démarrer l'application Django avec Gunicorn
 # Assurez-vous que Gunicorn est dans votre requirements.txt
 # Utilisez le fichier wsgi.py de votre projet
-CMD ["gunicorn", "gestion_immobiliere.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+# Copier le script d'entrée et le rendre exécutable
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+CMD ["/app/docker-entrypoint.sh"]
