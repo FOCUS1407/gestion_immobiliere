@@ -16,6 +16,11 @@ WORKDIR /app
 # Les autres sont pour Pango, Cairo, et les formats d'image.
 # build-essential est utile pour compiler certaines dépendances Python si nécessaire.
 RUN apt-get update \
+    # Installer les paquets de locales et générer fr_FR.UTF-8
+    && apt-get install -y --no-install-recommends locales \
+    && echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen \
+    && locale-gen fr_FR.UTF-8 \
+    && update-locale LANG=fr_FR.UTF-8 \
     && apt-get install -y --no-install-recommends \
     # Dépendances pour psycopg (PostgreSQL)
     libpq-dev postgresql-client \
