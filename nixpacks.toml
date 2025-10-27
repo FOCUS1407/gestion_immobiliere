@@ -13,3 +13,8 @@ nixPkgs = [
     "pkgs.shared-mime-info",
     "pkgs.pkg-config",
 ]
+
+# Définit explicitement les variables d'environnement pour la phase de démarrage.
+[variables]
+# Assure que le chemin vers les bibliothèques Nix est bien dans le LD_LIBRARY_PATH.
+LD_LIBRARY_PATH = "${NIX_PACKS_STANDARD_INPUT_LIBS}"
