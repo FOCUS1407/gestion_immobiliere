@@ -1,10 +1,11 @@
 #!/bin/sh
 
 # Arrête le script si une commande échoue
+# Pour un débogage extrême, décommenter la ligne suivante pour voir chaque commande exécutée
+set -x # <--- AJOUTEZ CETTE LIGNE POUR UN DÉBOGAGE TRÈS VERBEUX
 set -e
 
 # Afficher les variables d'environnement pour le débogage (ATTENTION : ne pas laisser en production avec des secrets)
-# --- Début du script d'entrée ---
 echo "--- Début de docker-entrypoint.sh ---"
 
 # Afficher les variables d'environnement pour le débogage
@@ -13,8 +14,8 @@ env
 echo "--- Fin des variables d'environnement ---"
 
 # Appliquer les migrations de la base de données
-echo "Applying database migrations..."
-python manage.py migrate
+echo "Applying database migrations with DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production..."
+DJANGO_SETTINGS_MODULE=gestion_immobiliere.settings.production python manage.py migrate # <--- MODIFICATION ICI
 echo "Database migrations applied successfully."
 
 # Démarrer le serveur Gunicorn
