@@ -3,3 +3,6 @@
 
 # Forcer les fins de ligne LF pour les scripts shell, car ils sont exécutés sur Linux.
 *.sh eol=lf
+
+# Forcer également les fins de ligne LF pour les fichiers Python pour la cohérence.
+*.py eol=lf
