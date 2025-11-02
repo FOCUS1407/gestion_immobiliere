@@ -12,18 +12,6 @@
         </div>
     </div>
 
-    <!-- Formulaire de recherche -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" action="{% url 'gestion:gerer_locataires' %}">
-                <div class="input-group">
-                    <input type="text" name="q" class="form-control" placeholder="Rechercher par nom ou prénom..." value="{{ search_query|default:'' }}">
-                    <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search me-2"></i>Rechercher</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     {% if locataires %}
         <div class="table-responsive">
             <table class="table table-hover">

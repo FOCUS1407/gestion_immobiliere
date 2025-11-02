@@ -11,34 +11,24 @@ from django.core.exceptions import ImproperlyConfigured
 
 # Configurez les hôtes autorisés pour votre domaine de production.
 # Ne PAS utiliser ['*'] en production !
-# Railway fournit un domaine par défaut. On l'ajoute, ainsi que votre domaine personnalisé.
-ALLOWED_HOSTS = set()
-
-# Récupérer les hôtes depuis la variable d'environnement, s'ils existent.
-allowed_hosts_str = os.getenv('ALLOWED_HOSTS')
-if allowed_hosts_str:
-    # Nettoie les espaces et ajoute les hôtes à un ensemble pour éviter les doublons
-    hosts = [host.strip() for host in allowed_hosts_str.split(',')]
-    ALLOWED_HOSTS.update(hosts)
-
-# Railway injecte une variable d'environnement pour son domaine de service.
-# C'est une bonne pratique de l'ajouter si elle existe.
-railway_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN')
-if railway_hostname:
-    ALLOWED_HOSTS.add(railway_hostname)
-
-ALLOWED_HOSTS = list(ALLOWED_HOSTS)
-
 # S'assurer que ALLOWED_HOSTS n'est jamais vide en production, sauf pendant la phase de construction.
 if 'collectstatic' not in sys.argv:
-    if not ALLOWED_HOSTS:
-        raise ImproperlyConfigured("La liste ALLOWED_HOSTS ne peut pas être vide en production. Définissez la variable d'environnement ALLOWED_HOSTS ou RAILWAY_PUBLIC_DOMAIN.")
+    allowed_hosts_str = os.getenv('ALLOWED_HOSTS')
+    if not allowed_hosts_str:
+        raise ImproperlyConfigured("La variable d'environnement ALLOWED_HOSTS est requise en production.")
+    
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
+    
+    # Railway injecte une variable d'environnement pour son domaine de service.
+    # C'est une bonne pratique de l'ajouter si elle existe.
+    railway_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN')
+    if railway_hostname:
+        ALLOWED_HOSTS.append(railway_hostname)
+else:
+    # Pendant la phase de build, la liste peut être vide.
+    ALLOWED_HOSTS = []
 
 # --- Configuration de la base de données ---
-DATABASE_URL = os.getenv('DATABASE_URL')
-if not DATABASE_URL and 'collectstatic' not in sys.argv:
-    raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
-
 DATABASES = {
     'default': dj_database_url.config(conn_max_age=600, ssl_require=True, default='sqlite:///db.sqlite3')
 }
