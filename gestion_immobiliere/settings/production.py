@@ -76,3 +76,25 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Le répertoire où `collectstatic` va rassembler tous les fichiers statiques.
 # WhiteNoise utilisera ce répertoire pour servir les fichiers.
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# --- Configuration du stockage des fichiers MEDIA (téléversements utilisateurs) sur Amazon S3 ---
+
+# Ne pas écraser les fichiers avec le même nom
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = 'public-read'
+
+# Le backend de stockage par défaut pour les fichiers média
+DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Storage'
+
+# Configuration de l'accès à votre bucket S3 via les variables d'environnement
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME') # ex: 'eu-west-3'
+
+# URL personnalisée pour servir les fichiers (meilleure performance)
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+# S'assurer que les variables AWS sont définies si on n'est pas en train de build
+if 'collectstatic' not in sys.argv and not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME]):
+    raise ImproperlyConfigured("Les variables d'environnement AWS pour le stockage S3 ne sont pas toutes définies.")

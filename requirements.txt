@@ -1,5 +1,6 @@
 asgiref==3.9.1
 Brotli==1.1.0
+boto3==1.35.1
 cffi==1.17.1
 cssselect2==0.8.0
 dj-database-url==3.0.1
@@ -7,6 +8,7 @@ Django==5.2.4
 django-widget-tweaks==1.5.0
 fonttools==4.59.0
 gunicorn==23.0.0
+django-storages==1.14.3
 packaging==25.0
 pillow==11.3.0
 psycopg[binary]==3.2.1
