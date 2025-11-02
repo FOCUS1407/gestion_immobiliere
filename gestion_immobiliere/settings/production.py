@@ -35,18 +35,13 @@ if 'collectstatic' not in sys.argv:
         raise ImproperlyConfigured("La liste ALLOWED_HOSTS ne peut pas être vide en production. Définissez la variable d'environnement ALLOWED_HOSTS ou RAILWAY_PUBLIC_DOMAIN.")
 
 # --- Configuration de la base de données ---
-# Si nous sommes en train d'exécuter `collectstatic`, nous n'avons pas besoin de la base de données.
-# Cela permet à la construction Docker de fonctionner sans les secrets de production.
-if 'collectstatic' in sys.argv:
-    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': 'db.sqlite3'}}
-else:
-    DATABASE_URL = os.getenv('DATABASE_URL')
-    if not DATABASE_URL:
-        raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
+DATABASE_URL = os.getenv('DATABASE_URL')
+if not DATABASE_URL and 'collectstatic' not in sys.argv:
+    raise ImproperlyConfigured("La variable d'environnement DATABASE_URL n'est pas définie pour la production.")
 
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
-    }
+DATABASES = {
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=True, default='sqlite:///db.sqlite3')
+}
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
 # Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.

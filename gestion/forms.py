@@ -1,6 +1,6 @@
 from django import forms
 from .models import CustomUser
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm
 from django.contrib.auth import get_user_model
 from django.utils.html import format_html
 from django.utils import timezone
@@ -96,6 +96,15 @@ class CustomPasswordResetForm(PasswordResetForm):
         """
         identifier = email
         return User._default_manager.filter(Q(email__iexact=identifier) | Q(telephone=identifier), is_active=True)
+
+class CustomSetPasswordForm(SetPasswordForm):
+    """
+    Surcharge le formulaire de définition de mot de passe pour utiliser le widget personnalisé.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['new_password1'].widget = PasswordToggleWidget(attrs={'class': 'form-control', 'placeholder': '••••••••'})
+        self.fields['new_password2'].widget = PasswordToggleWidget(attrs={'class': 'form-control', 'placeholder': '••••••••'})
 
 class MoyenPaiementForm(forms.ModelForm):
     """Formulaire pour ajouter un moyen de paiement."""
