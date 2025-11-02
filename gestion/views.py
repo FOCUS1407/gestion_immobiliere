@@ -906,7 +906,7 @@ def ajouter_proprietaire(request):
                         username = f"{base_username}{counter}"
                         counter += 1
                     
-                    password = User.objects.make_random_password(length=12, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*')
+                    password = User.make_random_password(length=12, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*')
 
                     proprietaire_user = User.objects.create_user(
                         username=username,
