@@ -59,7 +59,7 @@ urlpatterns = [
 
     # Tableaux de bord
     path('tableau-de-bord/agence/', views.tableau_de_bord_agence, name='tableau_de_bord_agence'),
-   # path('tableau-de-bord/proprietaire/', views.tableau_de_bord_proprietaire, name='tableau_de_bord_proprietaire'),
+   path('tableau-de-bord/proprietaire/', views.tableau_de_bord_proprietaire, name='tableau_de_bord_proprietaire'),
 
     # Gestion des Propriétaires (par l'agence)
     path('proprietaires/ajouter/', views.ajouter_proprietaire, name='ajouter_proprietaire'),

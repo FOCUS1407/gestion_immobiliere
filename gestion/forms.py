@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.db.models import Q
 from .models import Agence, Proprietaire, Locataire, Location, Chambre, Immeuble, Paiement, MoyenPaiement, EtatDesLieux
 
+from .widgets import PasswordToggleWidget # Importer le nouveau widget
 User = get_user_model()
 
 class ConnexionForm(AuthenticationForm):
@@ -17,13 +18,14 @@ class ConnexionForm(AuthenticationForm):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs.update(
-            {'class': 'form-control form-control-lg', 'placeholder': "Email"}
+        self.fields['username'].widget.attrs.update( 
+            {'class': 'form-control form-control-lg', 'placeholder': "Votre adresse e-mail"}
         )
-        self.fields['username'].label = "Adresse email"
-        self.fields['password'].widget.attrs.update(
-            {'class': 'form-control form-control-lg', 'placeholder': 'Mot de passe'}
-        )
+        self.fields['username'].label = "Adresse e-mail (votre identifiant)"
+        # Utiliser le nouveau widget pour le mot de passe
+        self.fields['password'].widget = PasswordToggleWidget(attrs={
+            'class': 'form-control form-control-lg', 'placeholder': 'Mot de passe',
+        })
 
 class AgenceRegistrationForm(forms.ModelForm):
     """
@@ -32,17 +34,17 @@ class AgenceRegistrationForm(forms.ModelForm):
     """
     password = forms.CharField(
         label="Mot de passe",
-        widget=forms.PasswordInput,
+        widget=PasswordToggleWidget, # Utiliser le nouveau widget
     )
     confirm_password = forms.CharField(
         label="Confirmer le mot de passe",
-        widget=forms.PasswordInput,
+        widget=PasswordToggleWidget, # Utiliser le nouveau widget
     )
 
     class Meta:
         model = CustomUser
         # Champs demandés lors de l'inscription
-        fields = ['first_name', 'last_name', 'email', 'telephone', 'addresse']
+        fields = ['first_name', 'last_name', 'email', 'telephone']
 
     def clean_confirm_password(self):
         """Vérifie que les deux mots de passe sont identiques."""
@@ -71,11 +73,11 @@ class UserUpdateForm(forms.ModelForm):
 class CustomPasswordChangeForm(PasswordChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['old_password'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
+        self.fields['old_password'].widget = PasswordToggleWidget(attrs={'class': 'form-control', 'placeholder': '••••••••'})
         self.fields['old_password'].label = "Ancien mot de passe"
-        self.fields['new_password1'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
+        self.fields['new_password1'].widget = PasswordToggleWidget(attrs={'class': 'form-control', 'placeholder': '••••••••'})
         self.fields['new_password1'].label = "Nouveau mot de passe"
-        self.fields['new_password2'].widget.attrs.update({'class': 'form-control', 'placeholder': '••••••••'})
+        self.fields['new_password2'].widget = PasswordToggleWidget(attrs={'class': 'form-control', 'placeholder': '••••••••'})
         self.fields['new_password2'].label = "Confirmation du nouveau mot de passe"
 
 class CustomPasswordResetForm(PasswordResetForm):

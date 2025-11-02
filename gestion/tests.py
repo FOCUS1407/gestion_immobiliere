@@ -339,7 +339,7 @@ class CheckLatePaymentsCommandTest(BaseTestCase):
         Vérifie qu'une notification est créée pour le mois en cours si la période de grâce est passée.
         """
         # On simule être le 15 Mars 2024
-        mock_now.return_value.date-return_value = date(2024, 3, 15)
+        mock_now.return_value.date.return_value = date(2024, 3, 15)
         
         Location.objects.create(
             chambre=self.chambre, locataire=self.locataire, date_entree='2024-03-01', moyen_paiement=self.moyen_paiement

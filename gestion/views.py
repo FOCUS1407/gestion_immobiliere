@@ -846,7 +846,7 @@ def profil_utilisateur(request):
             if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
             else: # 'PR'
-                return redirect('gestion:tableau_de_bord_proprietaire')
+                return redirect('gestion:tableau_de_bord_proprietaire') # CORRECTION : Ajout du namespace 'gestion:'
         else:
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
