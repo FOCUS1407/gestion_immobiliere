@@ -8,6 +8,11 @@ echo "Applying database migrations..."
 python manage.py migrate
 echo "Database migrations applied successfully."
 
+# Collecter tous les fichiers statiques dans le répertoire STATIC_ROOT
+echo "Collecting static files..."
+python manage.py collectstatic --no-input
+echo "Static files collected successfully."
+
 # Démarrer le serveur Gunicorn
 # 'exec' remplace le processus shell par Gunicorn, ce qui est une bonne pratique.
 echo "Starting Gunicorn server with Gunicorn..."
