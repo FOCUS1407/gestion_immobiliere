@@ -229,31 +229,32 @@ class ProprietaireProfileUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
-class ProprietaireCreationForm(forms.Form):
-    # Champs pour le modèle CustomUser
-    first_name = forms.CharField(label="Prénom du propriétaire", max_length=100)
-    last_name = forms.CharField(label="Nom du propriétaire", max_length=100)
-    email = forms.EmailField(label="Email")
-    telephone = forms.CharField(label="Téléphone", max_length=20)
-    addresse = forms.CharField(label="Adresse du propriétaire", widget=forms.Textarea(attrs={'rows': 3}))
-
+class ProprietaireCreationForm(forms.ModelForm):
+    """
+    Formulaire basé sur ModelForm pour créer un utilisateur Propriétaire.
+    Inclut les champs du contrat pour une création en une seule étape.
+    """
     # Champs pour le modèle Proprietaire (contrat)
     taux_commission = forms.DecimalField(label="Taux de commission (%)", max_digits=5, decimal_places=2)
     date_debut_contrat = forms.DateField(label="Date de début du contrat", widget=forms.DateInput(attrs={'type': 'date'}))
     duree_contrat = forms.IntegerField(label="Durée du contrat (en mois)")
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Appliquer les classes Bootstrap pour un meilleur style
-        for field_name, field in self.fields.items():
-            if not isinstance(field.widget, forms.CheckboxInput):
-                cls = field.widget.attrs.get('class', '')
-                field.widget.attrs['class'] = f'{cls} form-control'.strip()
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email', 'telephone', 'addresse']
+        labels = {
+            'first_name': "Prénom du propriétaire",
+            'last_name': "Nom du propriétaire",
+            'addresse': "Adresse du propriétaire",
+        }
+        widgets = {
+            'addresse': forms.Textarea(attrs={'rows': 3}),
+        }
 
     def clean_email(self):
         """Vérifie que l'email n'est pas déjà utilisé."""
         email = self.cleaned_data.get('email')
-        if User.objects.filter(email__iexact=email).exists():
+        if email and User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("Un utilisateur avec cet email existe déjà.")
         return email
 

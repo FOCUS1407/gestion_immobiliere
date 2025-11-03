@@ -894,33 +894,27 @@ def ajouter_proprietaire(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    cd = form.cleaned_data
+                    # 1. Créer l'utilisateur à partir du ModelForm, mais ne pas encore le sauvegarder.
+                    proprietaire_user = form.save(commit=False)
                     
-                    # 1. Créer le compte utilisateur pour le propriétaire
                     # Générer un nom d'utilisateur unique et un mot de passe temporaire
-                    base_username = f"{cd['first_name'].lower()}.{cd['last_name'].lower().replace(' ', '')}"
+                    base_username = f"{form.cleaned_data['first_name'].lower()}.{form.cleaned_data['last_name'].lower().replace(' ', '')}"
                     username = base_username
                     counter = 1
                     # Boucle pour garantir un nom d'utilisateur unique
                     while User.objects.filter(username=username).exists():
                         username = f"{base_username}{counter}"
                         counter += 1
+                    proprietaire_user.username = username
                     
                     password = User.make_random_password(length=12, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*')
-
-                    proprietaire_user = User.objects.create_user(
-                        username=username,
-                        password=password,
-                        email=cd['email'],
-                        first_name=cd['first_name'],
-                        last_name=cd['last_name'],
-                        telephone=cd['telephone'],
-                        addresse=cd['addresse'],
-                        must_change_password=True, # Forcer le changement de mot de passe
-                        user_type='PR'
-                    )
+                    proprietaire_user.set_password(password)
+                    proprietaire_user.user_type = 'PR'
+                    proprietaire_user.must_change_password = True
+                    proprietaire_user.save() # Sauvegarder l'utilisateur
 
                     # 2. Créer le profil Proprietaire (contrat)
+                    cd = form.cleaned_data
                     proprietaire_profil = Proprietaire.objects.create(
                         user=proprietaire_user,
                         agence=agence_profil, # Utilise le profil Agence vérifié
