@@ -149,18 +149,16 @@ SESSION_SAVE_EVERY_REQUEST = True
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend' # À commenter pour la production
 
 # --- Configuration pour la production avec Gmail ---
-if 'collectstatic' not in sys.argv:
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = 'smtp.gmail.com'
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-
-    if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-        raise ImproperlyConfigured("Les variables d'environnement EMAIL_HOST_USER et EMAIL_HOST_PASSWORD doivent être définies pour l'exécution.")
-
     DEFAULT_FROM_EMAIL = f"RentSolution <{EMAIL_HOST_USER}>"
 else:
-    # Utiliser une configuration factice pour la phase de construction
+    # Si les identifiants ne sont pas fournis, on utilise la console pour éviter les erreurs.
+    # Cela permet à l'application de fonctionner sans l'envoi d'e-mails.
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

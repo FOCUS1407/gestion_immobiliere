@@ -925,28 +925,28 @@ def ajouter_proprietaire(request):
 
                 messages.success(request, f"Le propriétaire {proprietaire_user.get_full_name()} a été ajouté avec succès.")
 
-                # # --- Envoi de l'email de bienvenue ---
-                # try:
-                #     subject = render_to_string('gestion/email/welcome_proprietaire_subject.txt').strip()
-                #     login_url = request.build_absolute_uri(reverse('gestion:connexion'))
+                # --- Envoi de l'email de bienvenue ---
+                try:
+                    subject = render_to_string('gestion/email/welcome_proprietaire_subject.txt').strip()
+                    login_url = request.build_absolute_uri(reverse('gestion:connexion'))
                     
-                #     email_context = {
-                #         'user': proprietaire_user,
-                #         'password': password,
-                #         'login_url': login_url,
-                #     }
+                    email_context = {
+                        'user': proprietaire_user,
+                        'password': password,
+                        'login_url': login_url,
+                    }
                     
-                #     text_body = render_to_string('gestion/email/welcome_proprietaire_body.txt', email_context)
-                #     html_body = render_to_string('gestion/email/welcome_proprietaire_body.html', email_context)
+                    text_body = render_to_string('gestion/email/welcome_proprietaire_body.txt', email_context)
+                    html_body = render_to_string('gestion/email/welcome_proprietaire_body.html', email_context)
 
-                #     send_mail(
-                #         subject=subject, message=text_body, from_email=None,
-                #         recipient_list=[proprietaire_user.email], html_message=html_body,
-                #         fail_silently=False,
-                #     )
-                #     messages.info(request, f"Un email de bienvenue a été envoyé à {proprietaire_user.email} avec ses identifiants.")
-                # except Exception as email_error:
-                #     messages.warning(request, f"Le propriétaire a été créé, mais l'envoi de l'email de bienvenue a échoué : {email_error}")
+                    send_mail(
+                        subject=subject, message=text_body, from_email=None,
+                        recipient_list=[proprietaire_user.email], html_message=html_body,
+                        fail_silently=False, # fail_silently=False est important pour voir les erreurs dans les logs
+                    )
+                    messages.info(request, f"Un email de bienvenue a été envoyé à {proprietaire_user.email} avec ses identifiants.")
+                except Exception as email_error:
+                    messages.warning(request, f"Le propriétaire a été créé, mais l'envoi de l'email de bienvenue a échoué. L'erreur est : {email_error}")
 
                 # Rediriger vers la page de détail du nouveau propriétaire pour pouvoir lui ajouter des biens
                 return redirect('gestion:proprietaire_detail', pk=proprietaire_user.pk)
