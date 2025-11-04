@@ -70,6 +70,8 @@ class CustomUser(AbstractUser):
 class Agence(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     logo = models.ImageField(upload_to=agence_logo_path, null=True, blank=True, verbose_name="Logo de l'agence")
+    rccm = models.CharField(max_length=100, blank=True, verbose_name="Numéro RCCM")
+    nif = models.CharField(max_length=100, blank=True, verbose_name="Numéro NIF")
     date_creation = models.DateField(auto_now_add=True)
 
     def __str__(self):

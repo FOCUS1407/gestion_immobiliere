@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.contrib.auth.views import PasswordChangeDoneView
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, models as auth_models
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.db import transaction, IntegrityError, models
@@ -10,6 +10,7 @@ from django.db.models import Sum, Count, Q, F, DecimalField, OuterRef, Exists
 from django.db.models.functions import Coalesce
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
+from django.utils.crypto import get_random_string
 from django.utils import timezone
 from django.http import HttpResponse
 from datetime import datetime, timedelta
@@ -907,7 +908,7 @@ def ajouter_proprietaire(request):
                         counter += 1
                     proprietaire_user.username = username
                     
-                    password = User.make_random_password(length=12, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*')
+                    password = get_random_string(length=12, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*')
                     proprietaire_user.set_password(password)
                     proprietaire_user.user_type = 'PR'
                     proprietaire_user.must_change_password = True

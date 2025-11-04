@@ -205,10 +205,11 @@ class EtatDesLieuxForm(forms.ModelForm):
 class AgenceProfileForm(forms.ModelForm):
     class Meta:
         model = Agence
-        fields = ['logo']
+        fields = ['logo', 'rccm', 'nif']
         labels = {
             'logo': "Logo de l'agence",
-        
+            'rccm': "Numéro RCCM (Registre du Commerce)",
+            'nif': "Numéro d'Identification Fiscale (NIF)",
         }
 
 class ProprietaireProfileUpdateForm(forms.ModelForm):
