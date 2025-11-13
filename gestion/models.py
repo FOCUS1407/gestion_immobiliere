@@ -138,6 +138,14 @@ class Immeuble(models.Model):
             (BOUTIQUE, 'Boutique'),
         )),
     ]
+
+    # CORRECTION : Créer une version "plate" des choix pour une utilisation directe dans les modèles
+    # et éviter les problèmes avec les `choices` groupés dans les requêtes de base de données.
+    TYPE_BIEN_CHOICES_FLAT = [
+        (CHAMBRE, 'Chambre'), (APPARTEMENT, 'Appartement'),
+        (BUREAU, 'Bureau'), (MAGASIN, 'Magasin'), (BOUTIQUE, 'Boutique'),
+    ]
+
     proprietaire = models.ForeignKey(Proprietaire, on_delete=models.CASCADE, related_name='immeubles')
     type_bien = models.CharField(max_length=10, choices=TYPE_BIEN_CHOICES, verbose_name="Type de bien")
     addresse = models.TextField()
@@ -195,7 +203,7 @@ class Chambre(models.Model):
     # Remplacer 'designation' par deux champs structurés
     type_unite = models.CharField(
         max_length=10,
-        choices=Immeuble.TYPE_BIEN_CHOICES,
+        choices=Immeuble.TYPE_BIEN_CHOICES_FLAT, # Utiliser la liste plate
         verbose_name="Type d'unité"
     )
     identifiant = models.CharField(max_length=50, verbose_name="Identifiant/Numéro", help_text="Ex: 101, A-02, RDC Gauche")
