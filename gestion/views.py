@@ -1696,10 +1696,17 @@ def chambre_detail(request, pk):
             }
             
             # Définir la locale en français pour générer les noms de mois correctement
+            # CORRECTION : Rendre la définition de la locale plus robuste pour éviter les crashs sur les serveurs de production
+            # où la locale 'fr_FR.UTF-8' n'est pas forcément installée.
             try:
                 locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
             except locale.Error:
-                locale.setlocale(locale.LC_TIME, '') # Fallback sur la locale système
+                try:
+                    locale.setlocale(locale.LC_TIME, '') # Fallback sur la locale système par défaut
+                except locale.Error:
+                    # Si même la locale par défaut échoue, on continue sans planter.
+                    # Les noms de mois seront probablement en anglais.
+                    pass
 
             # Itérer du début de la location jusqu'au mois actuel
             cursor_date = location_active.date_entree
