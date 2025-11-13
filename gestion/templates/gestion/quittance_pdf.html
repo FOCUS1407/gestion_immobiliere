@@ -76,8 +76,9 @@
     <div class="header">
         <div>
             {% if agence.logo %}
-                <!-- CORRECTION : Utilisation du filtre pour normaliser le chemin -->
-                <img src="{{ agence.logo.path|to_path_uri }}" alt="Logo Agence" class="logo">
+                <!-- CORRECTION : Utiliser .url pour obtenir l'URL web de l'image.
+                     WeasyPrint utilisera la base_url fournie dans la vue pour trouver le fichier. -->
+                <img src="{{ agence.logo.url }}" alt="Logo Agence" class="logo">
             {% endif %}
         </div>
         <div class="header-text">
