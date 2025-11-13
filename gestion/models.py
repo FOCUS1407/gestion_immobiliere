@@ -110,21 +110,30 @@ class Proprietaire(models.Model):
     def __str__(self):
         return f"{self.user.get_full_name()}"
 
-class TypeBien(models.Model):
-    RESIDENTIEL = 'RES'
-    COMMERCIAL = 'COM'
-    TYPE_CHOICES = [
-        (RESIDENTIEL, 'Résidentiel'),
-        (COMMERCIAL, 'Commercial'),
-    ]
-    designation = models.CharField(max_length=3, choices=TYPE_CHOICES, unique=True)
-
-    def __str__(self):
-        return self.get_designation_display()
-
 class Immeuble(models.Model):
+    # --- Définition des choix pour le type de bien ---
+    # Catégorie Habitation
+    CHAMBRE = 'CHAMBRE'
+    APPARTEMENT = 'APPART'
+    # Catégorie Commercial
+    BUREAU = 'BUREAU'
+    MAGASIN = 'MAGASIN'
+    BOUTIQUE = 'BOUTIQUE'
+
+    # Structure pour les choix groupés dans les formulaires
+    TYPE_BIEN_CHOICES = [
+        ('Habitation', (
+            (CHAMBRE, 'Chambre'),
+            (APPARTEMENT, 'Appartement'),
+        )),
+        ('Commercial', (
+            (BUREAU, 'Bureau'),
+            (MAGASIN, 'Magasin'),
+            (BOUTIQUE, 'Boutique'),
+        )),
+    ]
     proprietaire = models.ForeignKey(Proprietaire, on_delete=models.CASCADE, related_name='immeubles')
-    type_bien = models.ForeignKey(TypeBien, on_delete=models.PROTECT)
+    type_bien = models.CharField(max_length=10, choices=TYPE_BIEN_CHOICES, verbose_name="Type de bien")
     addresse = models.TextField()
     superficie = models.DecimalField(max_digits=10, decimal_places=2)  # en m²
     nombre_chambres = models.PositiveIntegerField()
@@ -173,14 +182,23 @@ class MoyenPaiement(models.Model):
 
 class Chambre(models.Model):
     immeuble = models.ForeignKey(Immeuble, on_delete=models.CASCADE, related_name='chambres')
-    designation = models.CharField(max_length=100)
+    # Remplacer 'designation' par deux champs structurés
+    type_unite = models.CharField(
+        max_length=10,
+        choices=Immeuble.TYPE_BIEN_CHOICES,
+        verbose_name="Type d'unité"
+    )
+    identifiant = models.CharField(max_length=50, verbose_name="Identifiant/Numéro", help_text="Ex: 101, A-02, RDC Gauche")
     superficie = models.DecimalField(max_digits=6, decimal_places=2)  # en m²
     prix_loyer = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     locataire = models.ForeignKey(Locataire, on_delete=models.SET_NULL, null=True, blank=True, related_name='chambres')
     date_mise_en_location = models.DateField(null=True, blank=True)
 
+    class Meta:
+        unique_together = ('immeuble', 'type_unite', 'identifiant')
+
     def __str__(self):
-        return f"Chambre {self.designation}"
+        return f"{self.get_type_unite_display()} {self.identifiant}"
 
 class Location(models.Model):
     chambre = models.ForeignKey(Chambre, on_delete=models.CASCADE, related_name='locations')

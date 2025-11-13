@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import (
-    CustomUser, Agence, Proprietaire, TypeBien, Immeuble, 
-    Locataire, MoyenPaiement, Chambre, Location, Paiement, EtatDesLieux
+    CustomUser, Agence, Proprietaire, Immeuble, 
+    Locataire, MoyenPaiement, Chambre, Location, Paiement, EtatDesLieux,
 )
 from django.db.models import Count
 
@@ -65,20 +65,20 @@ class ProprietaireAdmin(admin.ModelAdmin):
     get_nombre_immeubles.admin_order_field = '_nombre_immeubles'  # Allows column sorting
     get_nombre_immeubles.short_description = 'Nombre d\'immeubles'  # Sets column header
 
-# Configuration pour les types de bien
-@admin.register(TypeBien)
-class TypeBienAdmin(admin.ModelAdmin):
-    list_display = ('designation',)
-    search_fields = ('designation',)
-
 # Configuration pour les immeubles
 @admin.register(Immeuble)
 class ImmeubleAdmin(admin.ModelAdmin):
-    list_display = ('proprietaire', 'type_bien', 'addresse', 'superficie', 'nombre_chambres', 'date_ajout')
+    # On utilise get_type_bien_display pour afficher le nom lisible
+    list_display = ('proprietaire', 'get_type_bien_display', 'addresse', 'superficie_with_unit', 'nombre_chambres', 'date_ajout')
     list_filter = ('type_bien', 'proprietaire')
     search_fields = ('addresse',)
     raw_id_fields = ('proprietaire',)
     list_per_page = 20
+
+    def superficie_with_unit(self, obj):
+        return f"{obj.superficie} m²"
+    superficie_with_unit.short_description = 'Superficie'
+    superficie_with_unit.admin_order_field = 'superficie'
 
 # Configuration pour les locataires
 @admin.register(Locataire)
@@ -96,10 +96,21 @@ class MoyenPaiementAdmin(admin.ModelAdmin):
 # Configuration pour les chambres
 @admin.register(Chambre)
 class ChambreAdmin(admin.ModelAdmin):
-    list_display = ('immeuble', 'designation', 'superficie', 'prix_loyer', 'locataire_actuel')
-    list_filter = ('immeuble',)
-    search_fields = ('designation', 'immeuble__adresse')
+    list_display = ('immeuble', 'get_full_designation', 'superficie_with_unit', 'prix_loyer', 'locataire_actuel')
+    list_filter = ('immeuble', 'type_unite')
+    search_fields = ('identifiant', 'immeuble__addresse')
     raw_id_fields = ('immeuble', 'locataire')
+
+    def superficie_with_unit(self, obj):
+        return f"{obj.superficie} m²"
+    superficie_with_unit.short_description = 'Superficie'
+    superficie_with_unit.admin_order_field = 'superficie'
+    
+    def get_full_designation(self, obj):
+        """Retourne la désignation complète de l'unité."""
+        return str(obj) # Utilise la méthode __str__ du modèle Chambre
+    get_full_designation.short_description = 'Désignation'
+    get_full_designation.admin_order_field = 'identifiant' # Permet de trier par identifiant
     
     def locataire_actuel(self, obj):
         return obj.locataire if obj.locataire else "Libre"
@@ -110,7 +121,7 @@ class ChambreAdmin(admin.ModelAdmin):
 class LocationAdmin(admin.ModelAdmin):
     list_display = ('chambre', 'locataire', 'date_entree', 'date_sortie', 'moyen_paiement')
     list_filter = ('moyen_paiement',)
-    search_fields = ('chambre__designation', 'locataire__nom')
+    search_fields = ('chambre__identifiant', 'locataire__nom')
     raw_id_fields = ('chambre', 'locataire')
     list_per_page = 20
 
@@ -119,7 +130,7 @@ class LocationAdmin(admin.ModelAdmin):
 class PaiementAdmin(admin.ModelAdmin):
     list_display = ('location', 'montant', 'date_paiement', 'mois_couvert', 'moyen_paiement', 'est_valide')
     list_filter = ('est_valide', 'moyen_paiement')
-    search_fields = ('location__chambre__designation', 'location__locataire__nom')
+    search_fields = ('location__chambre__identifiant', 'location__locataire__nom')
     list_editable = ('est_valide',)
     raw_id_fields = ('location',)
     date_hierarchy = 'date_paiement'
@@ -130,5 +141,6 @@ class PaiementAdmin(admin.ModelAdmin):
 class EtatDesLieuxAdmin(admin.ModelAdmin):
     list_display = ('location', 'type_etat', 'date_etat', 'document_signe')
     list_filter = ('type_etat', 'date_etat')
-    search_fields = ('location__chambre__designation', 'location__locataire__nom')
+    search_fields = ('location__chambre__identifiant', 'location__locataire__nom')
     raw_id_fields = ('location',)
+    

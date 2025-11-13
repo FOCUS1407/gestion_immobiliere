@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 # Si le mois n'a pas été payé, il est en retard.
                 if month_str not in paid_months:
                     agence = location.chambre.immeuble.proprietaire.agence
-                    message = f"Paiement en retard pour {month_str} - Locataire: {location.locataire} ({location.chambre.designation})."
+                    message = f"Paiement en retard pour {month_str} - Locataire: {location.locataire} ({location.chambre})."
                     
                     # Éviter de créer des doublons de notifications non lues pour le même arriéré
                     if not Notification.objects.filter(agence=agence, message=message, is_read=False).exists():
@@ -59,4 +59,3 @@ class Command(BaseCommand):
                 cursor_date += relativedelta(months=1)
 
         self.stdout.write(self.style.SUCCESS(f"Vérification terminée. {notifications_creees} nouvelles notifications de retard créées."))
-

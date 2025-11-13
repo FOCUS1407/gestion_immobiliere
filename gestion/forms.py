@@ -139,13 +139,12 @@ class PaiementForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # CORRECTION : Appliquer la bonne classe Bootstrap en fonction du type de widget
         for field_name, field in self.fields.items():
-            if not isinstance(field.widget, forms.CheckboxInput):
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            elif not isinstance(field.widget, (forms.CheckboxInput, forms.FileInput)):
                 field.widget.attrs['class'] = 'form-control'
-        
-        # Amélioration pour Bootstrap 5 : utiliser form-select pour les listes déroulantes
-        if 'moyen_paiement' in self.fields:
-            self.fields['moyen_paiement'].widget.attrs['class'] = 'form-select'
             
         # Rendre le champ non obligatoire par défaut. La validation se fera dans la méthode clean().
         self.fields['preuve_paiement'].required = False
@@ -277,12 +276,18 @@ class LocationForm(forms.ModelForm):
         else:
             base_queryset = Locataire.objects.none()
 
-        # Exclure les locataires qui sont déjà dans une chambre
-        occupied_tenants_ids = Chambre.objects.filter(locataire__isnull=False).values_list('locataire_id', flat=True)
+        # Exclure les locataires qui ont déjà une location ACTIVE.
+        # C'est la source de vérité, plus fiable que le champ `chambre.locataire`.
+        occupied_tenants_ids = Location.objects.filter(
+            date_sortie__isnull=True
+        ).values_list('locataire_id', flat=True)
         self.fields['locataire'].queryset = base_queryset.exclude(pk__in=occupied_tenants_ids)
         
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                field.widget.attrs['class'] = 'form-control'
 
 class LocataireForm(forms.ModelForm):
     """
@@ -337,23 +342,37 @@ class ImmeubleForm(forms.ModelForm):
         widgets = {
             'addresse': forms.Textarea(attrs={'rows': 3}),
         }
+        labels = {
+            'superficie': "Superficie (m²)",
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                field.widget.attrs['class'] = 'form-control'
 
 class ChambreForm(forms.ModelForm):
     """Formulaire pour créer ou modifier une unité locative (chambre)."""
     class Meta:
         model = Chambre
         # L'immeuble sera défini dans la vue et le locataire sera assigné plus tard
-        fields = ['designation', 'superficie', 'prix_loyer', 'date_mise_en_location']
+        fields = ['type_unite', 'identifiant', 'superficie', 'prix_loyer', 'date_mise_en_location']
         widgets = {
             'date_mise_en_location': forms.DateInput(attrs={'type': 'date'}),
+        }
+        labels = {
+            'superficie': "Superficie (m²)",
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Appliquer la classe 'form-select' au nouveau champ de type d'unité
+        self.fields['type_unite'].widget.attrs['class'] = 'form-select'
+        
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            # Éviter d'écraser la classe déjà définie pour 'type_unite'
+            if 'class' not in field.widget.attrs:
+                field.widget.attrs['class'] = 'form-control'

@@ -429,13 +429,13 @@ def tableau_de_bord_agence(request):
     # --- Liste des chambres (avec pagination) ---
     all_chambres_list = Chambre.objects.filter(
         immeuble__proprietaire__agence=agence_profil
-    ).select_related('immeuble').order_by('immeuble__addresse', 'designation')
+    ).select_related('immeuble').order_by('immeuble__addresse', 'identifiant')
 
     # NOUVEAU : Appliquer le filtre par recherche textuelle sur les unités
     q_unite = request.GET.get('q_unite', '')
     if q_unite:
         all_chambres_list = all_chambres_list.filter(
-            Q(designation__icontains=q_unite) |
+            Q(identifiant__icontains=q_unite) |
             Q(immeuble__addresse__icontains=q_unite)
         )
 
@@ -741,7 +741,7 @@ def tableau_de_bord_proprietaire(request):
 
     try:
         proprietaire_profil = request.user.proprietaire
-        immeubles_proprietaire = Immeuble.objects.filter(proprietaire=proprietaire_profil).select_related('type_bien')
+        immeubles_proprietaire = Immeuble.objects.filter(proprietaire=proprietaire_profil)
         nombre_immeubles = immeubles_proprietaire.count()
 
         # --- Calcul du résumé financier et du rapport détaillé pour le mois en cours ---
@@ -1284,7 +1284,7 @@ def telecharger_paiements_locataire(request, locataire_id):
             paiement.date_paiement,
             paiement.montant,
             paiement.mois_couvert,
-            f"{paiement.location.chambre.designation} ({paiement.location.chambre.immeuble.addresse})",
+            f"{paiement.location.chambre} ({paiement.location.chambre.immeuble.addresse})",
             paiement.moyen_paiement.get_designation_display() if paiement.moyen_paiement else "-",
         ])
 
@@ -1404,7 +1404,7 @@ def immeuble_detail(request, pk):
     """
     Affiche les détails d'un immeuble et la liste de ses unités (chambres).
     """
-    immeuble = get_object_or_404(Immeuble.objects.select_related('proprietaire__user', 'type_bien'), pk=pk)
+    immeuble = get_object_or_404(Immeuble.objects.select_related('proprietaire__user'), pk=pk)
 
     # Vérification de sécurité : l'utilisateur est-il l'agence qui gère ou le propriétaire ?
     is_managing_agence = False
@@ -1541,8 +1541,8 @@ def ajouter_chambre(request, immeuble_id):
         if form.is_valid():
             chambre = form.save(commit=False)
             chambre.immeuble = immeuble
-            chambre.save()
-            messages.success(request, f"L'unité '{chambre.designation}' a été ajoutée avec succès.")
+            chambre.save() # La méthode __str__ est maintenant "Type identifiant"
+            messages.success(request, f"L'unité '{chambre}' a été ajoutée avec succès.")
             return redirect('gestion:immeuble_detail', pk=immeuble.pk)
     else:
         form = ChambreForm()
@@ -1572,7 +1572,7 @@ def modifier_chambre(request, pk):
         form = ChambreForm(request.POST, instance=chambre)
         if form.is_valid():
             form.save()
-            messages.success(request, f"L'unité '{chambre.designation}' a été mise à jour avec succès.")
+            messages.success(request, f"L'unité '{chambre}' a été mise à jour avec succès.")
             return redirect('gestion:immeuble_detail', pk=immeuble.pk)
     else:
         form = ChambreForm(instance=chambre)
@@ -1599,7 +1599,7 @@ def supprimer_chambre(request, pk):
         raise PermissionDenied("Impossible de vérifier les permissions.")
 
     if request.method == 'POST':
-        designation = chambre.designation
+        designation = str(chambre) # Utilise la méthode __str__
         chambre.delete()
         messages.success(request, f"L'unité '{designation}' a été supprimée avec succès.")
         return redirect('gestion:immeuble_detail', pk=immeuble.pk)
@@ -1629,10 +1629,6 @@ def chambre_detail(request, pk):
     if location_active:
         etats_des_lieux = location_active.etats_des_lieux.all()
 
-    # --- Initialisation des formulaires ---
-    location_form = None
-    etat_des_lieux_form = None
-
     if request.method == 'POST':
         if not is_managing_agence:
             raise PermissionDenied("Seule l'agence peut effectuer cette action.")
@@ -1650,9 +1646,13 @@ def chambre_detail(request, pk):
                     location.chambre = chambre
                     location.save()
                     chambre.locataire = location.locataire
-                    chambre.save()
-                messages.success(request, f"Le locataire {chambre.locataire} a été assigné à la chambre {chambre.designation}.")
+                    chambre.save() # La méthode __str__ est maintenant "Type identifiant"
+                messages.success(request, f"Le locataire {chambre.locataire} a été assigné à l'unité {chambre}.")
                 return redirect('gestion:chambre_detail', pk=pk)
+            else:
+                # Si le formulaire n'est pas valide, on affiche un message d'erreur.
+                # Le formulaire avec les erreurs sera automatiquement passé au contexte.
+                messages.error(request, "Veuillez corriger les erreurs dans le formulaire d'assignation.")
 
         # Gère l'ajout d'un état des lieux
         elif 'submit_etat_des_lieux' in request.POST:
@@ -1671,23 +1671,28 @@ def chambre_detail(request, pk):
                 except IntegrityError:
                     messages.error(request, f"Un état des lieux de ce type existe déjà pour cette location.")
 
-    else: # GET request
+    else: # Requête GET
+        location_form = None
+        etat_des_lieux_form = None
         if is_managing_agence:
-            if not location_active: # Si pas de location active, on peut proposer d'en créer une
+            if not location_active: # Si l'unité est libre, on prépare le formulaire d'assignation
                 location_form = LocationForm(agence=request.user.agence)
-            if location_active:
+            else: # Si l'unité est occupée, on prépare le formulaire d'état des lieux
                 etat_des_lieux_form = EtatDesLieuxForm()
-    
+
     # --- Construction de l'historique complet des paiements (payés et arriérés) ---
     payment_history = []
     if location_active: # L'historique des paiements est lié à la location active
         if location_active:
             # Récupérer tous les paiements (validés ou non) et les mapper par mois pour un accès rapide
             # CORRECTION : On cherche tous les paiements faits par le locataire actuel POUR CETTE CHAMBRE,
-            # peu importe la location (ancienne ou nouvelle).
+            # en pré-chargeant le moyen de paiement associé pour optimiser la requête.
+            payments_queryset = Paiement.objects.filter(
+                location__chambre=chambre, location__locataire=location_active.locataire
+            ).select_related('moyen_paiement')
+
             all_payments = {
-                p.mois_couvert: p 
-                for p in Paiement.objects.filter(location__chambre=chambre, location__locataire=location_active.locataire).order_by('date_paiement')
+                p.mois_couvert: p for p in payments_queryset.order_by('date_paiement')
             }
             
             # Définir la locale en français pour générer les noms de mois correctement
