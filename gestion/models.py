@@ -144,7 +144,11 @@ class Immeuble(models.Model):
     superficie = models.DecimalField(max_digits=10, decimal_places=2)  # en m²
     nombre_chambres = models.PositiveIntegerField()
     date_ajout = models.DateField(auto_now_add=True)
-
+    
+    class Meta:
+        verbose_name = "Immeuble"
+        verbose_name_plural = "Immeubles"
+  
     def __str__(self):
         return f"Immeuble {self.id} - {self.addresse[:20]}..."
 
