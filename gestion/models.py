@@ -43,8 +43,12 @@ class CustomUser(AbstractUser):
     
     def save(self, *args, **kwargs):
         # Vérifier si une nouvelle photo de profil a été téléversée
-        if self.photo_profil and hasattr(self.photo_profil.file, 'content_type'):
-            # Ouvrir l'image en mémoire
+        # CORRECTION : Gérer le cas où le fichier est en mémoire (upload) ou déjà sur S3.
+        # On vérifie si `self.photo_profil` a un attribut `file` qui indique un fichier en cours de téléversement.
+        if self.photo_profil and hasattr(self.photo_profil, 'file'):
+            # Lire le contenu du fichier en mémoire avant de le passer à Pillow.
+            # Cela fonctionne à la fois localement et avec des stockages distants comme S3.
+            self.photo_profil.file.seek(0)
             img = Image.open(self.photo_profil)
 
             # Définir la taille maximale (ex: 300x300 pixels)
@@ -79,8 +83,10 @@ class Agence(models.Model):
 
     def save(self, *args, **kwargs):
         # Logique similaire pour le logo de l'agence
-        if self.logo and hasattr(self.logo.file, 'content_type'):
-            img = Image.open(self.logo)
+        # CORRECTION : Appliquer la même logique que pour la photo de profil.
+        if self.logo and hasattr(self.logo, 'file'):
+            self.logo.file.seek(0)
+            img = Image.open(self.logo) # Pillow lit maintenant depuis le buffer mémoire.
 
             # Taille maximale pour un logo (ex: 400x400)
             max_size = (400, 400)
