@@ -147,7 +147,10 @@ class Immeuble(models.Model):
     ]
 
     proprietaire = models.ForeignKey(Proprietaire, on_delete=models.CASCADE, related_name='immeubles')
-    type_bien = models.CharField(max_length=10, choices=TYPE_BIEN_CHOICES, verbose_name="Type de bien")
+    # CORRECTION : Utiliser la liste de choix "plate" pour assurer la compatibilité
+    # avec toutes les parties de Django (admin, requêtes, etc.) et éviter les erreurs 500.
+    # La liste groupée est conservée pour une utilisation potentielle et spécifique dans les formulaires.
+    type_bien = models.CharField(max_length=10, choices=TYPE_BIEN_CHOICES_FLAT, verbose_name="Type de bien")
     addresse = models.TextField()
     superficie = models.DecimalField(max_digits=10, decimal_places=2)  # en m²
     nombre_chambres = models.PositiveIntegerField()
