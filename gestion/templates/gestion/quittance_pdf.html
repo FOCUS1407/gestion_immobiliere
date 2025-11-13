@@ -104,6 +104,7 @@
             <div>
                 <strong>Locataire</strong><br>
                 {{ locataire }}<br>
+                {% if locataire.telephone %}Tél : {{ locataire.telephone }}<br>{% endif %}
                 {{ immeuble.addresse }}<br>
                 Unité : {{ chambre }}
             </div>
