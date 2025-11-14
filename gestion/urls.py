@@ -7,11 +7,12 @@ app_name = 'gestion'
 
 urlpatterns = [
     # URLs générales et d'authentification
-    # CORRECTION : Utiliser re_path pour que l'URL de health check fonctionne avec ou sans slash final.
-    # L'expression régulière `^healthz/?$` correspond à 'healthz' et 'healthz/'.
+    # CORRECTION : Créer un endpoint dédié pour les health checks, qui renvoie toujours 200 OK.
+    # On utilise re_path pour que l'URL fonctionne avec ou sans le slash final.
     re_path(r'^healthz/?$', views.health_check, name='health_check'),
 
-    # CORRECTION : La racine '/' redirige maintenant vers la page de connexion.
+    # La racine '/' redirige les visiteurs vers la page de connexion.
+    # C'est ce qui cause l'échec du health check par défaut.
     path('', RedirectView.as_view(url=reverse_lazy('gestion:connexion')), name='accueil'),
     path('connexion/', views.connexion, name='connexion'),
     path('deconnexion/', views.logout_view, name='logout'),
