@@ -54,10 +54,13 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 # Redirige tout le trafic HTTP vers HTTPS.
 SECURE_SSL_REDIRECT = True
-# Domaines de confiance pour les requêtes CSRF (connexion, formulaires, etc.)
-# Django 4.0+ requiert que CSRF_TRUSTED_ORIGINS soit défini pour les requêtes HTTPS.
-# On le dérive directement de ALLOWED_HOSTS.
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+
+# CORRECTION : Définir CSRF_TRUSTED_ORIGINS de manière conditionnelle pour éviter les erreurs pendant le build.
+if IS_COLLECTSTATIC:
+    CSRF_TRUSTED_ORIGINS = []
+else:
+    # En exécution normale, on dérive les origines de confiance de ALLOWED_HOSTS.
+    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
