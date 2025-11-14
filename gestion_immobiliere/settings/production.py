@@ -85,5 +85,6 @@ AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME') # ex: 'eu-west-3'
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 
 # Vérification de sécurité : si on est en production, les clés AWS sont obligatoires.
-if not DEBUG and not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME]):
+# CORRECTION : On ne fait cette vérification que si on n'est PAS en train d'exécuter `collectstatic`.
+if not IS_COLLECTSTATIC and not DEBUG and not all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME]):
     raise ImproperlyConfigured("Les variables d'environnement AWS pour le stockage S3 ne sont pas toutes définies.")
