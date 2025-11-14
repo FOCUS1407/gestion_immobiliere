@@ -72,17 +72,12 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Origines de confiance pour les requêtes POST en HTTPS
-if IS_COLLECTSTATIC:
-    CSRF_TRUSTED_ORIGINS = []
-else:
-    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # --- Configuration des Middlewares ---
 
-# CORRECTION : Placer WhiteNoiseMiddleware en PREMIÈRE position, avant SecurityMiddleware.
-# Cela lui permet de servir les fichiers statiques efficacement sans interférer
-# avec la logique de redirection ou d'autres middlewares de sécurité pour les URLs dynamiques.
-MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# Position recommandée pour WhiteNoise : juste après SecurityMiddleware
+MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # --- Vérifications de configuration finale ---
 
