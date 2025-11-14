@@ -72,7 +72,11 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Origines de confiance pour les requêtes POST en HTTPS
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+# CORRECTION : Définir CSRF_TRUSTED_ORIGINS de manière conditionnelle.
+if IS_COLLECTSTATIC:
+    CSRF_TRUSTED_ORIGINS = []
+else:
+    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # --- Configuration des Middlewares ---
 
