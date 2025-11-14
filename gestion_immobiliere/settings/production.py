@@ -39,8 +39,11 @@ AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 # --- Configuration de la sécurité ---
 
 # Hôtes autorisés
-ALLOWED_HOSTS = []
-if not IS_COLLECTSTATIC:
+if IS_COLLECTSTATIC:
+    # Pendant la phase de build, on autorise tous les hôtes pour éviter les erreurs.
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = []
     # On récupère les domaines publics depuis les variables d'environnement
     public_hosts_str = os.getenv('ALLOWED_HOSTS', '')
     ALLOWED_HOSTS.extend([host.strip() for host in public_hosts_str.split(',') if host.strip()])
@@ -72,7 +75,7 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Origines de confiance pour les requêtes POST en HTTPS
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host != '*']
 
 # --- Configuration des Middlewares ---
 
