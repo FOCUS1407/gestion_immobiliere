@@ -7,11 +7,11 @@ app_name = 'gestion'
 
 urlpatterns = [
     # URLs générales et d'authentification
-    # CORRECTION : Ajouter un endpoint dédié pour les health checks, qui renvoie toujours 200 OK.
-    # path('healthz/', views.health_check, name='health_check'), # Remplacé par la racine
+    # CORRECTION : Créer un endpoint dédié pour les health checks, qui renvoie toujours 200 OK.
+    path('healthz/', views.health_check, name='health_check'),
 
-    # CORRECTION : La racine '/' renvoie maintenant 200 OK pour les health checks.
-    path('', views.health_check, name='health_check'),
+    # CORRECTION : La racine '/' redirige maintenant vers la page de connexion.
+    path('', RedirectView.as_view(url=reverse_lazy('gestion:connexion')), name='accueil'),
     path('connexion/', views.connexion, name='connexion'),
     path('deconnexion/', views.logout_view, name='logout'),
     path('inscription/', views.register_view, name='register'),

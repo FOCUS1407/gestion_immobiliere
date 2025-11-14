@@ -45,11 +45,9 @@ def health_check(request):
 def accueil(request):
     """
     Vue pour la page d'accueil.
-    - Répond avec un statut 200 OK pour les vérifications de santé (health checks).
-    - Redirige les utilisateurs authentifiés ou non vers la page de connexion.
+    Cette vue n'est plus directement utilisée par une URL, mais conservée pour référence.
+    La redirection est maintenant gérée directement dans urls.py.
     """
-    # Si la requête est une vérification de santé (souvent avec un User-Agent spécifique),
-    # Pour tous les visiteurs, on redirige simplement vers la page de connexion.
     return redirect('gestion:connexion')
 
 def connexion(request):
