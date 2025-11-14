@@ -1,4 +1,4 @@
-from django.urls import path, reverse_lazy
+from django.urls import path, re_path, reverse_lazy
 from . import views, forms 
 from django.views.generic.base import RedirectView
 from django.contrib.auth import views as auth_views
@@ -7,8 +7,9 @@ app_name = 'gestion'
 
 urlpatterns = [
     # URLs générales et d'authentification
-    # CORRECTION : Créer un endpoint dédié pour les health checks, qui renvoie toujours 200 OK.
-    path('healthz/', views.health_check, name='health_check'),
+    # CORRECTION : Utiliser re_path pour que l'URL de health check fonctionne avec ou sans slash final.
+    # L'expression régulière `^healthz/?$` correspond à 'healthz' et 'healthz/'.
+    re_path(r'^healthz/?$', views.health_check, name='health_check'),
 
     # CORRECTION : La racine '/' redirige maintenant vers la page de connexion.
     path('', RedirectView.as_view(url=reverse_lazy('gestion:connexion')), name='accueil'),
