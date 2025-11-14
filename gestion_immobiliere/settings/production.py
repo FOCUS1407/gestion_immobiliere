@@ -37,23 +37,18 @@ else:
     if not DEBUG and not ALLOWED_HOSTS:
         raise ImproperlyConfigured("La variable d'environnement ALLOWED_HOSTS ne peut pas être vide en production.")
 
-# --- Configuration de la base de données (plus robuste) ---
+# --- Configuration de la base de données ---
+# Par défaut, on exige la variable DATABASE_URL.
+# L'absence de 'default' dans dj_database_url.config() fera échouer le démarrage
+# si la variable est manquante, ce qui est le comportement souhaité.
+DATABASES = {
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+}
+
+# CORRECTION : Si on est en train de construire les fichiers statiques, on remplace la configuration
+# de la base de données par une base de données factice pour éviter les erreurs de connexion.
 if IS_COLLECTSTATIC:
-    # Pendant `collectstatic`, on utilise une base de données factice en mémoire
-    # pour éviter les erreurs si DATABASE_URL n'est pas encore disponible.
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
-    }
-else:
-    # En exécution normale, on exige la variable DATABASE_URL.
-    # L'absence de 'default' dans dj_database_url.config() fera échouer le démarrage
-    # si la variable est manquante, ce qui est le comportement souhaité.
-    DATABASES = {
-        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
-    }
+    DATABASES['default'] = {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
 # Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.
