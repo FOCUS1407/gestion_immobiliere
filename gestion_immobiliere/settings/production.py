@@ -72,16 +72,11 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Origines de confiance pour les requêtes POST en HTTPS
-# CORRECTION : Définir CSRF_TRUSTED_ORIGINS de manière conditionnelle.
-if IS_COLLECTSTATIC:
-    CSRF_TRUSTED_ORIGINS = []
-else:
-    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
 
 # --- Configuration des Middlewares ---
 
-# CORRECTION : Insérer WhiteNoiseMiddleware juste APRÈS SecurityMiddleware.
-# C'est la position recommandée pour garantir que les vérifications de sécurité s'exécutent en premier.
+# Position recommandée pour WhiteNoise : juste après SecurityMiddleware
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # --- Vérifications de configuration finale ---
@@ -99,3 +94,4 @@ if not IS_COLLECTSTATIC:
             "Toutes les variables d'environnement AWS (ACCESS_KEY, SECRET_KEY, BUCKET_NAME, REGION) "
             "doivent être définies en production."
         )
+
