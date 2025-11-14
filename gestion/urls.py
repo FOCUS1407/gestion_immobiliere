@@ -7,9 +7,8 @@ app_name = 'gestion'
 
 urlpatterns = [
     # URLs générales et d'authentification
-    # path('', views.accueil, name='accueil'),
-    # Redirige la page d'accueil (racine) directement vers la page de connexion
-    path('', RedirectView.as_view(url=reverse_lazy('gestion:connexion')), name='accueil'),
+    # CORRECTION : Utiliser une vue dédiée pour la page d'accueil afin de gérer les health checks.
+    path('', views.accueil, name='accueil'),
     path('connexion/', views.connexion, name='connexion'),
     path('deconnexion/', views.logout_view, name='logout'),
     path('inscription/', views.register_view, name='register'),

@@ -35,6 +35,20 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 User = get_user_model()
 
+def accueil(request):
+    """
+    Vue pour la page d'accueil.
+    - Répond avec un statut 200 OK pour les vérifications de santé (health checks).
+    - Redirige les utilisateurs authentifiés ou non vers la page de connexion.
+    """
+    # Si la requête est une vérification de santé (souvent avec un User-Agent spécifique),
+    # on renvoie une réponse simple pour que le déploiement réussisse.
+    if 'health check' in request.headers.get('User-Agent', '').lower():
+        return HttpResponse("OK", status=200)
+    
+    # Pour tous les autres visiteurs, on redirige vers la page de connexion.
+    return redirect('gestion:connexion')
+
 def connexion(request):
     """
     Gère la connexion des utilisateurs et redirige selon le type de compte.

@@ -19,27 +19,41 @@ IS_COLLECTSTATIC = 'collectstatic' in sys.argv
 # CORRECTION : Simplifier et sécuriser la configuration de ALLOWED_HOSTS.
 # On récupère la variable d'environnement, avec une chaîne vide par défaut.
 if IS_COLLECTSTATIC:
-    ALLOWED_HOSTS = ['*'] # Permissif uniquement pendant le build
+    # Pendant le build, on autorise tout pour éviter les erreurs.
+    ALLOWED_HOSTS = ["*"]
 else:
     allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 
-    # Railway (ou autre hébergeur) injecte souvent son propre domaine de service.
-    # On l'ajoute à la liste s'il existe.
+    # CORRECTION : Toujours ajouter le domaine de service de l'hébergeur s'il existe.
+    # C'est crucial pour que les vérifications de santé (health checks) fonctionnent.
     service_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN') or os.getenv('HEROKU_HOSTNAME')
     if service_hostname:
-        ALLOWED_HOSTS.append(service_hostname)
+        # On s'assure de ne pas l'ajouter en double
+        if service_hostname not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(service_hostname)
 
     # Vérification de sécurité : si on est en production (DEBUG=False) et que la liste est vide, on lève une erreur.
     if not DEBUG and not ALLOWED_HOSTS:
         raise ImproperlyConfigured("La variable d'environnement ALLOWED_HOSTS ne peut pas être vide en production.")
 
-# --- Configuration de la base de données ---
-DATABASES = {
-    # CORRECTION : Fournir une base de données factice (in-memory) pendant `collectstatic`
-    # si DATABASE_URL n'est pas disponible, pour éviter un crash.
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True, default='sqlite:///:memory:')
-}
+# --- Configuration de la base de données (plus robuste) ---
+if IS_COLLECTSTATIC:
+    # Pendant `collectstatic`, on utilise une base de données factice en mémoire
+    # pour éviter les erreurs si DATABASE_URL n'est pas encore disponible.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+else:
+    # En exécution normale, on exige la variable DATABASE_URL.
+    # L'absence de 'default' dans dj_database_url.config() fera échouer le démarrage
+    # si la variable est manquante, ce qui est le comportement souhaité.
+    DATABASES = {
+        'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    }
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
 # Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.
@@ -60,7 +74,7 @@ if IS_COLLECTSTATIC:
     CSRF_TRUSTED_ORIGINS = []
 else:
     # En exécution normale, on dérive les origines de confiance de ALLOWED_HOSTS.
-    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS]
+    CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host != "*"]
 
 # Configuration pour WhiteNoise
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
