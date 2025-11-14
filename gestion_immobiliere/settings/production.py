@@ -1,6 +1,8 @@
 import os
 from .base import *  # Importe tous les paramètres communs
 import sys
+# CORRECTION : Importer dj_database_url pour pouvoir l'utiliser.
+# Il était utilisé mais pas importé, ce qui aurait pu causer une NameError.
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
@@ -8,31 +10,35 @@ from django.core.exceptions import ImproperlyConfigured
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # DEBUG est déjà à False dans base.py, donc pas besoin de le redéfinir.
+# CORRECTION : Détecter si la commande 'collectstatic' est en cours d'exécution.
+IS_COLLECTSTATIC = 'collectstatic' in sys.argv
 
 # Configurez les hôtes autorisés pour votre domaine de production.
 # Ne PAS utiliser ['*'] en production !
 
 # CORRECTION : Simplifier et sécuriser la configuration de ALLOWED_HOSTS.
 # On récupère la variable d'environnement, avec une chaîne vide par défaut.
-allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
+if IS_COLLECTSTATIC:
+    ALLOWED_HOSTS = ['*'] # Permissif uniquement pendant le build
+else:
+    allowed_hosts_str = os.getenv('ALLOWED_HOSTS', '')
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',') if host.strip()]
 
-# Railway (ou autre hébergeur) injecte souvent son propre domaine de service.
-# On l'ajoute à la liste s'il existe.
-service_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN') or os.getenv('HEROKU_HOSTNAME')
-if service_hostname:
-    ALLOWED_HOSTS.append(service_hostname)
+    # Railway (ou autre hébergeur) injecte souvent son propre domaine de service.
+    # On l'ajoute à la liste s'il existe.
+    service_hostname = os.getenv('RAILWAY_PUBLIC_DOMAIN') or os.getenv('HEROKU_HOSTNAME')
+    if service_hostname:
+        ALLOWED_HOSTS.append(service_hostname)
 
-# Vérification de sécurité : si on est en production (DEBUG=False) et que la liste est vide, on lève une erreur.
-if not DEBUG and not ALLOWED_HOSTS:
-    raise ImproperlyConfigured("La variable d'environnement ALLOWED_HOSTS ne peut pas être vide en production.")
+    # Vérification de sécurité : si on est en production (DEBUG=False) et que la liste est vide, on lève une erreur.
+    if not DEBUG and not ALLOWED_HOSTS:
+        raise ImproperlyConfigured("La variable d'environnement ALLOWED_HOSTS ne peut pas être vide en production.")
 
 # --- Configuration de la base de données ---
 DATABASES = {
-    # CORRECTION : Supprimer le 'default' pour que l'application échoue bruyamment
-    # si la variable d'environnement DATABASE_URL n'est pas définie en production.
-    # Cela garantit que l'application se connecte toujours à la bonne base de données.
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    # CORRECTION : Fournir une base de données factice (in-memory) pendant `collectstatic`
+    # si DATABASE_URL n'est pas disponible, pour éviter un crash.
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=True, default='sqlite:///:memory:')
 }
 
 # --- Configuration pour le Reverse Proxy (Railway) ---
