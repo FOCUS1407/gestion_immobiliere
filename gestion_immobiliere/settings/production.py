@@ -79,8 +79,10 @@ else:
 
 # --- Configuration des Middlewares ---
 
-# Position recommandée pour WhiteNoise : juste après SecurityMiddleware
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# CORRECTION : Placer WhiteNoiseMiddleware en PREMIÈRE position, avant SecurityMiddleware.
+# Cela lui permet de servir les fichiers statiques efficacement sans interférer
+# avec la logique de redirection ou d'autres middlewares de sécurité pour les URLs dynamiques.
+MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # --- Vérifications de configuration finale ---
 
