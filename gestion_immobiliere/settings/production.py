@@ -61,9 +61,11 @@ if IS_COLLECTSTATIC:
 # Indique à Django de faire confiance à l'en-tête X-Forwarded-Proto envoyé par Railway.
 # C'est essentiel pour que SECURE_SSL_REDIRECT fonctionne correctement.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Insérer WhiteNoiseMiddleware juste après SecurityMiddleware
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+ 
+# CORRECTION : Placer WhiteNoiseMiddleware en PREMIÈRE position, avant SecurityMiddleware.
+# Cela lui permet de servir les fichiers statiques efficacement sans interférer
+# avec la logique de redirection ou d'autres middlewares de sécurité pour les URLs dynamiques.
+MIDDLEWARE.insert(0, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # Paramètres de sécurité pour HTTPS
 CSRF_COOKIE_SECURE = True
