@@ -32,6 +32,13 @@ else:
         # On s'assure de ne pas l'ajouter en double
         if service_hostname not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(service_hostname)
+            
+    # CORRECTION : Ajouter le domaine privé de Railway pour les health checks internes.
+    # C'est souvent la cause des échecs de health check.
+    private_hostname = os.getenv('RAILWAY_PRIVATE_DOMAIN')
+    if private_hostname:
+        if private_hostname not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(private_hostname)
 
     # Vérification de sécurité : si on est en production (DEBUG=False) et que la liste est vide, on lève une erreur.
     if not DEBUG and not ALLOWED_HOSTS:
