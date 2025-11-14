@@ -73,7 +73,7 @@ SECURE_SSL_REDIRECT = True
 # CORRECTION : Exempter le point de contrôle de santé de la redirection SSL.
 # Les vérifications de santé internes sont souvent en HTTP simple. Sans cette exception,
 # Django renverrait une redirection 301, ce qui ferait échouer la vérification.
-SECURE_REDIRECT_EXEMPT = [r'^healthz/$']
+SECURE_REDIRECT_EXEMPT = [r'^healthz/?$']
 
 
 # CORRECTION : Définir CSRF_TRUSTED_ORIGINS de manière conditionnelle pour éviter les erreurs pendant le build.
