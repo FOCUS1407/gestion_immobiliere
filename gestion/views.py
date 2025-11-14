@@ -86,7 +86,8 @@ def logout_view(request):
     """
     logout(request)
     messages.info(request, "Vous avez été déconnecté avec succès.")
-    return redirect('gestion:accueil')
+    # CORRECTION : Rediriger directement vers la page de connexion.
+    return redirect('gestion:connexion')
 
 @transaction.atomic # Assure que la création de l'utilisateur et de l'agence se fait en une seule fois
 def register_view(request):
