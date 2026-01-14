@@ -12,12 +12,11 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'dummy-key-for-build')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-prod')
 
 # Ne pas exiger de clé secrète pendant la phase de construction (collectstatic)
-if 'collectstatic' not in sys.argv:
-    if SECRET_KEY == 'dummy-key-for-build' and not os.getenv('SECRET_KEY'):
-        raise ImproperlyConfigured("La variable d'environnement SECRET_KEY n'est pas définie pour l'exécution.")
+# La vérification stricte est retirée pour faciliter le développement local.
+# En production, assurez-vous que SECRET_KEY est bien défini dans les variables d'environnement.
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # La valeur par défaut est False. Elle sera surchargée à True dans development.py.
