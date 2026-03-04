@@ -12,6 +12,8 @@ from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -35,6 +37,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 User = get_user_model()
 
+@csrf_exempt
 def health_check(request):
     """
     Vue dédiée pour les vérifications de santé (health checks).
@@ -50,6 +53,7 @@ def accueil(request):
     """
     return redirect('gestion:connexion')
 
+@never_cache
 def connexion(request):
     """
     Gère la connexion des utilisateurs et redirige selon le type de compte.
@@ -58,20 +62,35 @@ def connexion(request):
         # Si l'utilisateur est déjà connecté, on le redirige vers son tableau de bord
         if request.user.user_type == 'AG':
             return redirect('gestion:tableau_de_bord_agence')
-        else: # 'PR'
+        elif request.user.user_type == 'PR':
             return redirect('gestion:tableau_de_bord_proprietaire')
+        # Un superuser est redirigé vers le TDB agence, qui est le plus complet.
+        elif request.user.is_superuser:
+            return redirect('gestion:tableau_de_bord_agence')
+        else:
+            # Pour tout autre cas (ex: type de compte invalide), on déconnecte.
+            logout(request)
+            messages.error(request, "Votre compte n'est pas configuré correctement pour accéder à l'application.")
+            return redirect('gestion:connexion')
 
     if request.method == 'POST':
         form = ConnexionForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            # messages.success(request, f"Bienvenue, {user.username} !") # Message de bienvenue supprimé.
             # Redirection vers le tableau de bord approprié
             if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
-            else:
+            elif user.user_type == 'PR':
                 return redirect('gestion:tableau_de_bord_proprietaire')
+            # Un superuser est redirigé vers le TDB agence.
+            elif user.is_superuser:
+                return redirect('gestion:tableau_de_bord_agence')
+            else:
+                # Pour tout autre cas (ex: type de compte invalide), on déconnecte.
+                logout(request)
+                messages.error(request, "Votre compte n'est pas configuré correctement pour accéder à l'application.")
+                return redirect('gestion:connexion')
         else:
             messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
     else:
@@ -87,6 +106,7 @@ def logout_view(request):
     # CORRECTION : Rediriger directement vers la page de connexion.
     return redirect('gestion:connexion')
 
+@never_cache
 @transaction.atomic # Assure que la création de l'utilisateur et de l'agence se fait en une seule fois
 def register_view(request):
     """
@@ -401,7 +421,9 @@ def _get_monthly_financial_report(agence, proprietaire_id=None, num_months=12):
 @login_required
 def tableau_de_bord_agence(request):
     """Affiche le tableau de bord principal pour l'agence."""
-    if request.user.user_type != 'AG':
+    # Autorise les utilisateurs de type 'AG' et les super-utilisateurs.
+    # Redirige les autres (principalement les 'PR' qui arriveraient ici par erreur).
+    if request.user.user_type != 'AG' and not request.user.is_superuser:
         return redirect('gestion:tableau_de_bord_proprietaire')
     
     agence_profil = None
@@ -856,14 +878,18 @@ def profil_utilisateur(request):
         # On vérifie si tous les formulaires sont valides
         if all(form.is_valid() for form in form_list):
             for form in form_list:
-                form.save() # On sauvegarde chaque formulaire
+                form.save()  # On sauvegarde chaque formulaire
             
             messages.success(request, 'Votre profil a été mis à jour avec succès.')
-            # Rediriger vers le tableau de bord approprié après la mise à jour
+            # Rediriger vers le tableau de bord approprié après la mise à jour.
+            # On gère explicitement le cas du superutilisateur pour éviter une redirection incorrecte.
             if user.user_type == 'AG':
                 return redirect('gestion:tableau_de_bord_agence')
-            else: # 'PR'
-                return redirect('gestion:tableau_de_bord_proprietaire') # CORRECTION : Ajout du namespace 'gestion:'
+            elif user.user_type == 'PR':
+                return redirect('gestion:tableau_de_bord_proprietaire')
+            elif user.is_superuser:
+                return redirect('gestion:tableau_de_bord_agence')
+            return redirect('gestion:connexion')  # Fallback sécurisé
         else:
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:

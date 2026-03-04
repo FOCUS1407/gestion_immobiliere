@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
 
-# Charger les variables d'environnement depuis le fichier .env pour tous les environnements
-load_dotenv()
-
 # Le chemin de base est maintenant 3 niveaux plus haut car ce fichier est dans settings/
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Charger les variables d'environnement depuis le fichier .env pour tous les environnements
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-prod')

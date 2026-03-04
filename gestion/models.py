@@ -30,7 +30,7 @@ class CustomUser(AbstractUser):
         (PROPRIETAIRE, 'Propriétaire'),
     ]
     user_type = models.CharField(max_length=2, choices=USER_TYPE_CHOICES)
-    telephone = models.CharField(max_length=20)
+    telephone = models.CharField(max_length=20, blank=True)
     addresse = models.TextField(blank=True)
     photo_profil = models.ImageField(upload_to=user_profile_pic_path, default='profile_pics/default_avatar.jpg', verbose_name="Photo de profil")
     must_change_password = models.BooleanField(default=False, verbose_name="Doit changer le mot de passe")

@@ -8,7 +8,8 @@ def main():
     """Run administrative tasks."""
     # Charger les variables d'environnement depuis le fichier .env.
     # Ceci doit être fait AVANT d'accéder à os.environ.
-    load_dotenv()
+    dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path)
 
     # Définit le module de settings par défaut pour le développement local.
     # Cette ligne est une sécurité : si DJANGO_SETTINGS_MODULE n'est pas dans votre .env,
