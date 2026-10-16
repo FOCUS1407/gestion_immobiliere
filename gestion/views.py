@@ -29,7 +29,7 @@ from gestion.models import Agence, CustomUser, EtatDesLieux, Locataire, Location
 
 try:
     from weasyprint import HTML
-except ImportError:
+except (ImportError, OSError):
     HTML = None # Gère le cas où WeasyPrint n'est pas installé
 
 from django.core.exceptions import PermissionDenied
